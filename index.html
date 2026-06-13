@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#1A3409"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="AgronoMix AI"/>
+  <meta name="description" content="Consultant agronomic AI pentru drone agricole — GRUPO SPIC S.R.L."/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon.png"/>
+  <title>AgronoMix AI — GRUPO SPIC S.R.L.</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+         background:#1A3409;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+    #root{min-height:100vh;background:#F3F0E8;}
+    #splash{position:fixed;inset:0;background:linear-gradient(135deg,#1A3409,#2E7D1F);
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:16px;z-index:9999;transition:opacity .5s;}
+    #splash.hide{opacity:0;pointer-events:none;}
+    #splash .icon{font-size:64px;animation:pulse 1.5s ease-in-out infinite;}
+    #splash h1{color:#fff;font-size:22px;font-weight:900;letter-spacing:-.5px;}
+    #splash p{color:rgba(255,255,255,.6);font-size:13px;}
+    @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+    input,select,textarea,button{font-family:inherit;}
+    ::-webkit-scrollbar{display:none;}
+    scrollbar-width:none;
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <div class="icon">🚁</div>
+    <h1>AgronoMix AI</h1>
+    <p>GRUPO SPIC S.R.L. · Se încarcă...</p>
+  </div>
+  <div id="root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script type="text/babel" src="app.jsx" data-presets="react,env" data-type="module"></script>
+  <script>
+    // Hide splash when app loads
+    window.addEventListener('load', function(){
+      setTimeout(function(){
+        var s=document.getElementById('splash');
+        if(s){s.classList.add('hide');setTimeout(function(){s.remove();},500);}
+      }, 1800);
+    });
+  </script>
+</body>
+</html>
