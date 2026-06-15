@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#1A3409"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="AgronoMix AI"/>
+  <title>AgronoMix AI — GRUPO SPIC S.R.L.</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1A3409;-webkit-tap-highlight-color:transparent;}
+    #root{min-height:100vh;background:#F3F0E8;}
+    #splash{position:fixed;inset:0;background:linear-gradient(135deg,#1A3409,#2E7D1F);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9999;}
+    #splash h1{color:#fff;font-size:24px;font-weight:900;}
+    #splash p{color:rgba(255,255,255,.7);font-size:14px;}
+    .heli{font-size:72px;animation:bob 2s ease-in-out infinite;}
+    .dots{display:flex;gap:8px;margin-top:8px;}
+    .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.6);animation:pulse 1.4s ease-in-out infinite;}
+    .dot:nth-child(2){animation-delay:.2s;}
+    .dot:nth-child(3){animation-delay:.4s;}
+    @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+    @keyframes pulse{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+    input,select,textarea,button{font-family:inherit;}
+    ::-webkit-scrollbar{display:none;}
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <div class="heli">🚁</div>
+    <h1>AgronoMix AI</h1>
+    <p>GRUPO SPIC S.R.L.</p>
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+  <div id="root"></div>
+  <script>
+    // Load scripts sequentially for reliability
+    function loadScript(src, cb) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = cb;
+      s.onerror = function(){ cb(); }; // continue even on error
+      document.head.appendChild(s);
+    }
+    
+    loadScript('https://unpkg.com/react@18/umd/react.production.min.js', function() {
+      loadScript('https://unpkg.com/react-dom@18/umd/react-dom.production.min.js', function() {
+        loadScript('https://unpkg.com/@babel/standalone/babel.min.js', function() {
+          // Now compile and run our app
+          var appCode = document.getElementById('app-source').textContent;
+          try {
+            var compiled = Babel.transform(appCode, {
+              presets: ['react', 'env'],
+              filename: 'app.jsx'
+            }).code;
+            eval(compiled);
+          } catch(e) {
+            document.getElementById('splash').innerHTML = '<div style="color:#fff;padding:20px;font-size:14px;"><h2>Eroare de încărcare</h2><p style="margin-top:10px;opacity:.8">'+e.message+'</p><p style="margin-top:20px;opacity:.6">Reîncarcă pagina</p></div>';
+          }
+        });
+      });
+    });
+  </script>
+  <script id="app-source" type="text/jsx-source">
+const { useState, useEffect, useMemo, useRef } = React;
+import { useState, useEffect, useMemo, useRef } from "react";
+
+const C={soil:"#1A3409",leaf:"#2E7D1F",leafLight:"#4CAF38",sky:"#1976A8",amber:"#C07800",cream:"#F3F0E8",white:"#FFFFFF",dark:"#111A08",muted:"#6E8866",border:"#CDDAC4",danger:"#B02020",warn:"#C06A00",ok:"#1E7A3A",panel:"#ECF3E6",panelDark:"#D6E8CA",blue:"#1565A0",bluePale:"#E3F0FB",purple:"#7B3FA0",teal:"#00695C"};
+
+
+const LOGO="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCABEAMgDASIAAhEBAxEB/8QAGwABAAIDAQEAAAAAAAAAAAAAAAQFAgMGAQf/xABBEAABAwMBBQQFCQYGAwAAAAABAgMEAAUREgYTITFRQWFxgRQiMlKRFSM0QnKhscHRBxYkRFNiM1R0kqKzgpPw/8QAGQEBAQEBAQEAAAAAAAAAAAAAAAIBBAMF/8QAIBEAAgIDAAIDAQAAAAAAAAAAAAECEQMSIQQxIkFRQv/aAAwDAQACEQMRAD8A+nUpSgFa33m47RdeWEoHMmo9xukS3N6pLgCiPVQOKleVcVcby/dJjev5tlLidDYPAceZ6mqUW+kuSXDvW323VuIQoFTStKx2g4zWyuFu9xkW7aSTIirwoKAUk8QoYHAiuhs+0kK56WioMSe1pZ5/ZPb+Na4NKzFNN0XNKUqCxSlKAUpSgFKUoBSlKAUpSgFKUoBSlKAUpSgFKUoCsm362wJ4hTZAZdUgLBWDpIJI5+VVl0uN5caKrc00uOeT0ZW9J/T4Vzn7RWnBfGXi2sNGOE69J051HhnrXPwpMiG4HIr7jK+qFEV0Qxqtjzm/o6VVql5Mm6SG4aFcVOSXPWPlzNalXO2QeFraVKfH8zIT6qe9KPzNYi7JuoQxeYSZij6qHWhoeHgRz8KkPWG3W91LkmY8pCk6kxdADvgog4FZKcYq5kJL+TA3JqUhKbwyXzjhIbwl1Pj2KHjUVyxpm5VaJ7Mo8904d26PI8DUzc2y4rCG3Dbnc40uHW2R3HmD41sdjwrM/pRDVIkp4pdkj1fFKRwPjmvN58ajsmEmvZlZ3tr4r3owjrcaRz9LGEpH2+f411Sb1Ea3TMuUwZSyElDBKxkn/wC51w824zZqv4mQtY90HCfgK1W9JNyihIyd6ngB3iuaXk7viN3/AA+kRZQkPSm9Gn0d3d5z7XqpVn/lVLI2mVJnqt1hjiZJT7TqjhpHUk9tYzxKXbNokwQovl7CdPMjdozjvxmq39nUqA1AkMF5tEtTuSlRwSkAYx17a9j2L5FrujyQqbe30rP1YraG0j4gk1Vm4XGy7URLbImKnRZgGkupAWgkkcxjPGuqU62lOpS0gdSRVdLuljZdQ7KmQQ63nQpS0lSeuO0UBaUqn/emyf55JHUNrI+OKkxb3apitMa4RnFe6HAD8DxoCfXHXvau7WmUtDtpQ20DhDi1qKVjrkDHlUp/aKam6PRHEQ7elBw2uapQ3w6pIwPv7a3tzrjKUplJsk8acqaakEEjwIIoDyNcNo5DCH27fbnG3EhSVJlHBB8q2m63hlaG5Fpja1+ylM5IKvAEDNIsty2tFs2CTHa1FWIxS6kE9ADkfCua2gucOVtZZ39S222VJ3hfbU3o9fPHUBQHVfLEpv6TY7gjvbCHB9ys16No7YOEhx2KrpIZU395GKnMTYkkZjymHfsOBX4VvUAoEKGQeYNAa48mPKRrjPtvJ6trCh91barZFhtj6956Kll3sdYJaWPNOKq3J02x3mHAkSTNizVaG1OAb1o5xxI9ocedAdNSq/0iY3jKN5nUOCCMHVhPl1qaypSmG1LGFFIJGMccUBnSlKA4fa+93C231LMdxCo62ElbLqApCuJ7Kp0SbJPOZlvXBdPNyIrKPNB/Kuk2qg2qfPQiRKVFmJbGlwpyhScnAP31zciwXGKneBlMhnsdjq1p/UV5vJKL+JEoyXWuF1u0RY2dm0NOoKfnZCTqfHlzSPCqg4AUtxWPeJNZW23zJHzzCCyhHOQ4ShCfPmfKpz78Zl0OrPyhLAxv304Qn7KO09541y5bn2Ton2VJSFEkAjPEBQxkdasbSLg8n0ZthMqID6yHvYR3hX1T4Vgq+Sdf8UG5bec6HkggeB5itrl5RPAQVlsD2WTgJHcMcDU3qrj09McVJ03RIm2+zRnyoSX3h/SbIOD019KyhXIMSWm7dDYjJWtIUca1qGe1RqElp19zdMNOOL91KSSP0qbEgx4k1k3KY02vWNLDZ1rJzwzjlUwnkk+Kkdyw4ca/WdHasCZdiT/NDP8A60VAnK2SlvqMv5Pddz6ygATnvIrTcoMq426/RoKyl5UpJAzjXhtslOe+rLZ+fCfhNxo7aYzzCAlyKpOhTZHPh076+kcREiWnZSQoCLHt7x90ELPwJq3Yt0GN9Hhx2vsNJT+AqNdW7JpxdUwwTy3ukK8u34VUJl26OtKLZf3I2ThLckKW0e4FfEeSqA6qoku2QJqSJcNh7PatsE/GoHyldYh/jrUX2/60Fev/AIHB+Ga3x9oLU+rQJrbTna2982oeSsUBDkbNaGim1znoyf6DvzzJ7tKs48qgx7ovZ98M3i1R4rbh0iXDbAbV4jmK6pLzSxlLiFDqFA1TbT3K1MWeSzPdaXvGylLQIKlHHDA7OPb2UBcMvNSGUPMOJcbWMpUk5BFcbtWkK20sQUAQVJBB459epH7OWpKLO8p0KDC3AWc9vD1iO7P51B2yktsbYWdxagEs6Vr/ALRr5n4Ghh1b9htEji9bYij13QB+IrmICYr+0C7axAlxUpKgVtSXUlGO0jOMH867dKgpIUkggjII7a5OJNmfvw5DXLdXHSV4bUeHs5qZOqPSCVPhcfImOV1ugHT0jP4isG7daLXJEyS8DJIwH5b+pXkVHh5VH2su8i3NRYsEpRJmubtLq+TYyAT48RUqNabZbGS9J3bjp4uSpRBUo9SpXLwFUQWbLzT7YcYcQ4g8lIUCD5is6pGbtZWHXFwQXFLxrMWOtYVjvSMVOiXWDMd3TL+Hue6cSUL/ANqgDQE2lKUBye1Vuluzky2WVONBsJJRxIIJ7KpIjz0deph1bahz0nFfR6iS7bDmcX2ElXvDgr4iubL47k7i+nVj8io6yXDmTdlSmQzcWESmwcg+yod+RUdy1wZeBCmqZcPANyBwJ6BQq2k7NKTlUN/P9jn6iozcd21MSJ0pj5xnCWkq4pKj9byrmUcqlU1aNnDDkXx9lMvZiehRVOfjRGRzcUvVnwArHc2OBxbZduLo+s+dDf8AtHPzrXIlSJj+p1a3XVHgOZ8AKsYWy9wlYVIKYzZ97ir4frVLJKTrGi14mHF3KysnXufLRu1P7poDAbZGhIHThWVhtkqbOZWyyrcocClukYSADnn2muwgbL2yIQtbZkOjjqd4jyHKroAJSAkAAcgK9o4JN3Nmz8uMVrjiVtp+m3b/AFY/60VovVodu8pptW6YYawr0hH+Pn3UH6g6njW+1fTrt/qx/wBaKs66jgKKPs03DdU9BnymnVnKlrCHVH/yUkn769mbPOXFrc3O6y5DGQS0lKGwrHUhOavKUBgy0hhlDLSdLbaQlI6AcBUaYLbIyzMTGe080OAKx5HlUp1KltLShWlRSQFdD1qjsrUm2w348iO7vitSg4hOsLyOBz+tY301Lhi9s/sxu0vLiRUNr9lSVlCT8DitkKx7NpcKosOG4tHE5Osj4k1FuMW5yrC2h6NmQXtehoAYGDz7M8a3RIcpm/mXLZW8Fo0tvIwNAxyUn7qnZ3VFaqrsu2H47yD6O62tKOB0EEDuqnnWvZyY8ZsxuMtbhxvC6RqI4dhr2ztP2v0lh+M6rU6VoW2nUFA/h51CuVtmm0w2UMLW4l9bqwnB0gkn86bOroKKurLy2pt8eP6LblNBtr6iF501CTDszdzNwD4EnUSVl84yRjHPHlWEywqeTLktSHDMkN6AVYSAOHDA64xWTO8RYRBXbnd6Gd1u9I0qOMZznGO2lv7QpfTJ1ytcG7xgzOZDqAdSTnBSeoIqNG2ctUdaVmMX3E+yqQtTpT4aiceVbrHDeg2tqPIXqWnJwDkJz2VYVSfCX7PAAAABgCtMuHGmtbuUylxI4jPNJ6g8we8VvpWmGuO1uGENbxxzSManFalHxPbStlKAUpSgFYuIQ4hSHEJUhQwUqGQaUoCHCtMGC8t2KwELX25zjuGeQqdSlTFJLhrbbtimaUqjDwADOABnnXtKUApSlAKUpQClKUArylKA9pSlAKUpQClKUApSlAf/2Q==";
+
+const DRONE_DB={
+  DJI:{label:"DJI Agriculture",logo:"🟦",culoare:"#1565A0",modele:{
+    "Agras T100":{rezervor:100,pompa:"16 L/min, 8 duze",duze:8,vol_min:8,vol_max:40,vol_solid_max:100,latime_max:16,viteza_max:15,viteza_rec:7,particule_min:50,particule_max:500,vant_max:15,vant_op:10,rafale_max:18,altitudine_rec:"1.5–4 m",solid:true,note:"Rezervor 100L lichid SAU 100L solid. ~50 ha/h. RTK+radar. ~20-25 min/zbor."},
+    "Agras T50":{rezervor:40,pompa:"2 sau 4 duze centrifugale",duze:"2 sau 4",vol_min:8,vol_max:30,vol_solid_max:50,latime_max:11,viteza_max:15,viteza_rec:6,particule_min:50,particule_max:500,vant_max:12,vant_op:7,rafale_max:15,altitudine_rec:"1.5–3 m",solid:true,note:"Rezervor unic 40L (schimbabil 50kg solid). 2 duze=câmp, 4 duze=vie/livadă. ~10-12 min/zbor."},
+    "Agras T40":{rezervor:40,pompa:"8 duze, max 12 L/min",duze:8,vol_min:8,vol_max:25,vol_solid_max:50,latime_max:9,viteza_max:12,viteza_rec:5,particule_min:50,particule_max:500,vant_max:10,vant_op:7,rafale_max:13,altitudine_rec:"1.5–3 m",solid:true,note:"Dublu rezervor 20+20L."},
+    "Agras T30":{rezervor:30,pompa:"16 duze, max 10 L/min",duze:16,vol_min:8,vol_max:25,vol_solid_max:null,latime_max:9,viteza_max:12,viteza_rec:5,particule_min:50,particule_max:400,vant_max:8,vant_op:5,rafale_max:10,altitudine_rec:"1.5–3 m",solid:false,note:"16 duze rotative."},
+    "Agras T25":{rezervor:25,pompa:"4 duze, max 6.4 L/min",duze:4,vol_min:8,vol_max:20,vol_solid_max:null,latime_max:7,viteza_max:10,viteza_rec:5,particule_min:75,particule_max:400,vant_max:8,vant_op:5,rafale_max:10,altitudine_rec:"1.5–2.5 m",solid:false,note:"Model compact 13.5kg."},
+    "Agras T20P":{rezervor:20,pompa:"4 duze, max 4.8 L/min",duze:4,vol_min:8,vol_max:20,vol_solid_max:null,latime_max:6,viteza_max:10,viteza_rec:4,particule_min:75,particule_max:400,vant_max:7,vant_op:5,rafale_max:9,altitudine_rec:"1.5–2.5 m",solid:false,note:"Entry-level."},
+    "Agras T10":{rezervor:10,pompa:"2 duze, max 2.4 L/min",duze:2,vol_min:8,vol_max:15,vol_solid_max:null,latime_max:5,viteza_max:8,viteza_rec:4,particule_min:100,particule_max:300,vant_max:6,vant_op:4,rafale_max:8,altitudine_rec:"1.5–2 m",solid:false,note:"Compact. Sub 5 ha."},
+  }},
+  XAG:{label:"XAG",logo:"🟩",culoare:"#1B6B2F",modele:{
+    "XAG P100 Pro":{rezervor:40,pompa:"max 12 L/min, 8 duze",duze:8,vol_min:8,vol_max:30,vol_solid_max:40,latime_max:10,viteza_max:12,viteza_rec:6,particule_min:50,particule_max:500,vant_max:10,vant_op:7,rafale_max:13,altitudine_rec:"1.5–3 m",solid:true,note:"Flagship XAG 2024."},
+    "XAG P40":{rezervor:40,pompa:"max 10 L/min, 8 duze",duze:8,vol_min:8,vol_max:25,vol_solid_max:40,latime_max:9,viteza_max:12,viteza_rec:5,particule_min:50,particule_max:500,vant_max:10,vant_op:7,rafale_max:13,altitudine_rec:"1.5–3 m",solid:true,note:"Versatil câmp+solid."},
+    "XAG V40 Pro":{rezervor:40,pompa:"max 8 L/min, 4 duze",duze:4,vol_min:8,vol_max:20,vol_solid_max:null,latime_max:8,viteza_max:10,viteza_rec:5,particule_min:75,particule_max:400,vant_max:8,vant_op:5,rafale_max:10,altitudine_rec:"1.5–2.5 m",solid:false,note:"Design pliabil."},
+    "XAG P20":{rezervor:20,pompa:"max 5 L/min, 4 duze",duze:4,vol_min:8,vol_max:20,vol_solid_max:null,latime_max:6,viteza_max:10,viteza_rec:4,particule_min:75,particule_max:400,vant_max:7,vant_op:5,rafale_max:9,altitudine_rec:"1.5–2.5 m",solid:false,note:"Compact."},
+  }},
+};
+
+const PRODUSE_DB=[
+  {id:"f001",cat:"fungicid",grp:"cereale",nume:"Amistar Opti",sa:"azoxistrobin+clorotalonil",doza_et:"1.0–1.5 L/ha",doza_drona:"1.0–1.5 L/ha",vol_drona:"10–15 L/ha",pih:35,culturi:["grau","orz"],note:"Septoria, rugini."},
+  {id:"f002",cat:"fungicid",grp:"cereale",nume:"Prosaro 250 EC",sa:"proticonazol+tebuconazol",doza_et:"0.8–1.0 L/ha",doza_drona:"0.8–1.0 L/ha",vol_drona:"10–15 L/ha",pih:35,culturi:["grau","orz"],note:"Fuzarioza spicului."},
+  {id:"f003",cat:"fungicid",grp:"cereale",nume:"Aviator Xpro EC",sa:"bixafen+proticonazol",doza_et:"1.0–1.25 L/ha",doza_drona:"1.0–1.25 L/ha",vol_drona:"10–15 L/ha",pih:35,culturi:["grau","orz"],note:"SDHI+triazol."},
+  {id:"f004",cat:"fungicid",grp:"cereale",nume:"Adexar",sa:"epoxiconazol+fluxapiroxad",doza_et:"1.5 L/ha",doza_drona:"1.5 L/ha",vol_drona:"10–15 L/ha",pih:35,culturi:["grau","orz"],note:"Spectru larg."},
+  {id:"f005",cat:"fungicid",grp:"floarea-soarelui",nume:"Pictor",sa:"boscalid+dimoxistrobin",doza_et:"0.5 L/ha",doza_drona:"0.5 L/ha",vol_drona:"10–15 L/ha",pih:42,culturi:["floarea_soarelui"],note:"Mana, putregai."},
+  {id:"f006",cat:"fungicid",grp:"rapita",nume:"Proline 275 EC",sa:"proticonazol",doza_et:"0.7–0.8 L/ha",doza_drona:"0.7–0.8 L/ha",vol_drona:"10–15 L/ha",pih:42,culturi:["rapita"],note:"Sclerotinia."},
+  {id:"f007",cat:"fungicid",grp:"vita de vie",nume:"Ridomil Gold MZ 68 WG",sa:"metalaxil-M+mancozeb",doza_et:"2.5 kg/ha",doza_drona:"2.5 kg/ha",vol_drona:"15–20 L/ha",pih:21,culturi:["vita_vie"],note:"Mana preventiv."},
+  {id:"f008",cat:"fungicid",grp:"vita de vie",nume:"Luna Experience",sa:"fluopyram+tebuconazol",doza_et:"0.8 L/ha",doza_drona:"0.8 L/ha",vol_drona:"15–20 L/ha",pih:14,culturi:["vita_vie"],note:"Oidium+Botrytis."},
+  {id:"f009",cat:"fungicid",grp:"porumb",nume:"Quilt Xcel",sa:"azoxistrobin+propiconazol",doza_et:"1.0–1.5 L/ha",doza_drona:"1.0–1.5 L/ha",vol_drona:"10–15 L/ha",pih:30,culturi:["porumb"],note:"Cercospora, rugina."},
+  {id:"e001",cat:"erbicid",grp:"cereale",nume:"Mustang Forte",sa:"florasulam+2,4-D",doza_et:"0.5–0.6 L/ha",doza_drona:"0.5–0.6 L/ha",vol_drona:"10–15 L/ha",pih:60,culturi:["grau","orz"],derive:true,note:"🚨 Min 5m față de dicotiledonate."},
+  {id:"e002",cat:"erbicid",grp:"cereale",nume:"Atlantis OD",sa:"mesosulfuron+iodosulfuron",doza_et:"1.0–1.2 L/ha",doza_drona:"1.0–1.2 L/ha",vol_drona:"10–15 L/ha",pih:60,culturi:["grau","orz"],derive:true,note:"🚨 Adjuvant Biopower obligatoriu."},
+  {id:"e003",cat:"erbicid",grp:"porumb",nume:"MaisTer Power",sa:"foramsulfuron+iodosulfuron",doza_et:"1.25–1.5 L/ha",doza_drona:"1.25–1.5 L/ha",vol_drona:"10–15 L/ha",pih:60,culturi:["porumb"],derive:true,note:"🚨 Adjuvant Mero obligatoriu."},
+  {id:"e004",cat:"erbicid",grp:"porumb",nume:"Callisto 480 SC",sa:"mesotrionă",doza_et:"0.15–0.25 L/ha",doza_drona:"0.15–0.25 L/ha",vol_drona:"10–15 L/ha",pih:45,culturi:["porumb"],derive:true,note:"🚨 Risc cereale vecine."},
+  {id:"e005",cat:"erbicid",grp:"floarea-soarelui",nume:"Fusilade Forte",sa:"fluazifop-P-butil",doza_et:"0.75–1.5 L/ha",doza_drona:"0.75–1.5 L/ha",vol_drona:"10–15 L/ha",pih:60,culturi:["floarea_soarelui","soia","rapita"],derive:true,note:"🚨 Risc cereale vecine."},
+  {id:"i001",cat:"insecticid",grp:"cereale",nume:"Karate Zeon 50 CS",sa:"lambda-cihalotrin",doza_et:"0.1–0.15 L/ha",doza_drona:"0.1–0.15 L/ha",vol_drona:"10–15 L/ha",pih:14,albine:true,culturi:["grau","orz","porumb","rapita"],note:"⚠️ Pericol albine."},
+  {id:"i002",cat:"insecticid",grp:"cereale",nume:"Decis 25 WG",sa:"deltametrin",doza_et:"0.03–0.05 kg/ha",doza_drona:"0.03–0.05 kg/ha",vol_drona:"10–15 L/ha",pih:14,albine:true,culturi:["grau","orz","porumb","floarea_soarelui"],note:"⚠️ Pericol albine."},
+  {id:"i003",cat:"insecticid",grp:"porumb",nume:"Coragen 20 SC",sa:"clorantraniliprol",doza_et:"0.1–0.2 L/ha",doza_drona:"0.1–0.2 L/ha",vol_drona:"10–15 L/ha",pih:14,albine:false,culturi:["porumb"],note:"Risc scăzut albine."},
+  {id:"i004",cat:"insecticid",grp:"floarea-soarelui",nume:"Mospilan 20 SG",sa:"acetamiprid",doza_et:"0.075–0.1 kg/ha",doza_drona:"0.075–0.1 kg/ha",vol_drona:"10–15 L/ha",pih:14,albine:true,culturi:["floarea_soarelui","rapita","vita_vie"],note:"⚠️ NU în inflorire."},
+  {id:"a001",cat:"acaricid",grp:"universal",nume:"Envidor 240 SC",sa:"spirodiclofen",doza_et:"0.5 L/ha",doza_drona:"0.5 L/ha",vol_drona:"15–20 L/ha",pih:14,albine:false,culturi:["vita_vie","livada","porumb"],note:"Tetranychus."},
+  {id:"b001",cat:"foliar NPK",grp:"universal",nume:"Wuxal Amino",sa:"NPK 8-8-6+aminoacizi",doza_et:"2–4 L/ha",doza_drona:"2–4 L/ha",vol_drona:"10–15 L/ha",pih:0,culturi:["grau","orz","porumb","floarea_soarelui","rapita","soia","vita_vie"],note:"Jar test recomandat."},
+  {id:"b002",cat:"biostimulator",grp:"universal",nume:"Megafol",sa:"aminoacizi vegetali 40%",doza_et:"1.0–2.0 L/ha",doza_drona:"1.0–2.0 L/ha",vol_drona:"10–15 L/ha",pih:0,culturi:["grau","orz","porumb","floarea_soarelui","soia","vita_vie"],note:"Antistres."},
+  {id:"b003",cat:"microelemente",grp:"universal",nume:"Nutribor",sa:"bor 11%+azot",doza_et:"0.5–1.0 L/ha",doza_drona:"0.5–1.0 L/ha",vol_drona:"10–15 L/ha",pih:0,culturi:["rapita","floarea_soarelui","vita_vie"],note:"Inflorire, fecundare."},
+  {id:"r001",cat:"reglator creștere",grp:"cereale",nume:"Moddus 250 EC",sa:"trinexapac-etil",doza_et:"0.4–0.6 L/ha",doza_drona:"0.4–0.6 L/ha",vol_drona:"10–15 L/ha",pih:30,culturi:["grau","orz"],note:"Reducere înălțime BBCH 25-32."},
+  {id:"adj001",cat:"adjuvant",grp:"universal",nume:"Silwet Gold",sa:"siloxan polietoxilat",doza_et:"20–100 mL/100L",doza_drona:"50–100 mL/100L",vol_drona:"—",pih:0,culturi:["grau","orz","porumb","floarea_soarelui","rapita","soia","vita_vie"],note:"⚠️ Dronă: doză mai mare vs terestru."},
+  {id:"adj002",cat:"adjuvant",grp:"universal",nume:"Break-Thru S 240",sa:"siloxan trisiliconic",doza_et:"25–50 mL/100L",doza_drona:"50–75 mL/100L",vol_drona:"—",pih:0,culturi:["grau","orz","porumb","floarea_soarelui","rapita","soia"],note:"Super-spreader."},
+];
+
+const CAT_COLORS={"fungicid":C.leaf,"erbicid":C.danger,"insecticid":C.amber,"acaricid":C.purple,"foliar NPK":C.teal,"biostimulator":C.ok,"microelemente":C.sky,"reglator creștere":C.blue,"adjuvant":C.muted};
+const CAT_ICONS={"fungicid":"🍄","erbicid":"🌿","insecticid":"🐛","acaricid":"🕷️","foliar NPK":"🌱","biostimulator":"💚","microelemente":"⚗️","reglator creștere":"📐","adjuvant":"🧴"};
+const CROPS=[{id:"grau",label:"Grâu",icon:"🌾"},{id:"orz",label:"Orz",icon:"🌾"},{id:"porumb",label:"Porumb",icon:"🌽"},{id:"floarea_soarelui",label:"Floarea-soarelui",icon:"🌻"},{id:"rapita",label:"Rapiță",icon:"🌼"},{id:"soia",label:"Soia",icon:"🫘"},{id:"sfecla",label:"Sfeclă",icon:"🌿"},{id:"cartofi",label:"Cartofi",icon:"🥔"},{id:"vita_vie",label:"Viță de vie",icon:"🍇"},{id:"livada",label:"Livadă",icon:"🍎"},{id:"legume",label:"Legume",icon:"🥬"},{id:"alt",label:"Alta",icon:"🌱"}];
+const FENOFAZE={grau:["Răsărire (BBCH 09-13)","Înfrățire (BBCH 21-29)","Alungire pai (BBCH 30-39)","Spic în burduf (BBCH 41-49)","Înflorire (BBCH 60-69)","Formarea boabelor (BBCH 70-79)","Maturare (BBCH 80-89)"],orz:["Răsărire","Înfrățire","Alungire pai","Spic în burduf","Înflorire","Formarea boabelor","Maturare"],porumb:["Răsărire (VE-V3)","V4-V6","V7-V10","V11-VT","Mătăsit (R1)","Formarea bobului (R2-R3)","Maturare (R4-R6)"],floarea_soarelui:["Răsărire","4-6 frunze","8-10 frunze","Buton floral","Înflorire","Umplerea achene","Maturare"],rapita:["Răsărire","Rozetă 4-6 frunze","Rozetă mare","Alungire tijă","Buton floral","Înflorire","Formare păstăi","Maturare"],soia:["Răsărire","V1-V2","V3-V5","Înflorire R1-R2","R3-R4","R5-R6","Maturare"],sfecla:["Răsărire","Plantulă","Rozeta mică","Rozeta mare","Închiderea rândurilor","Îngroșare","Maturitate"],cartofi:["Răsărire","Vegetativ timpuriu","Alungire","Îmbobocire","Înflorire","Formare tuberculi","Maturare"],vita_vie:["Plânsul viței","Dezmugurire","3-5 frunze","Creștere activă","Înflorire","Legarea boabelor","Pârgă","Maturare"],livada:["Repaus","Umflarea mugurilor","Dezmugurire","Verde-mouse","Buton alb/roz","Înflorire","Căderea petalelor","Fructe mici","Maturare"],legume:["Răsărire/Transplant","Prindere","Vegetativ activ","Înflorire","Legarea fructelor","Maturare"],alt:["Germinare","Plantulă","Vegetativ timpuriu","Vegetativ activ","Înflorire","Fructificare","Maturare"]};
+const PROD_TIPURI=["fungicid","erbicid","insecticid","acaricid","foliar NPK","biostimulator","microelemente","reglator creștere","altul"];
+const TRAT_PREV=["Fungicid preventiv","Fungicid curativ","Erbicid total","Erbicid selectiv","Insecticid","Acaricid","Foliar NPK","Biostimulator","Microelemente","Reglator creștere"];
+const INTERVALE_ZI=[{id:"dimineata",label:"Dimineață",icon:"🌅",hint:"05-10h"},{id:"zi",label:"Zi",icon:"☀️",hint:"10-17h"},{id:"seara",label:"Seară",icon:"🌇",hint:"17-21h"},{id:"noapte",label:"Noapte",icon:"🌙",hint:"21-05h"}];
+const LUNI=["Ian","Feb","Mar","Apr","Mai","Iun","Iul","Aug","Sep","Oct","Nov","Dec"];
+
+const iSt=(e={})=>({width:"100%",boxSizing:"border-box",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:8,fontSize:14,color:C.dark,background:C.white,fontFamily:"inherit",outline:"none",...e});
+const Card=({children,style})=><div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:12,boxShadow:"0 2px 8px #1A34090A",...style}}>{children}</div>;
+const SecH=({icon,title})=><div style={{display:"flex",alignItems:"center",gap:9,marginBottom:14,paddingBottom:10,borderBottom:`1px solid ${C.border}`}}><span style={{fontSize:20}}>{icon}</span><span style={{fontWeight:800,fontSize:14,color:C.soil,letterSpacing:.3,textTransform:"uppercase"}}>{title}</span></div>;
+const FL=({label,hint,children})=><div style={{marginBottom:11}}><label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:3,textTransform:"uppercase",letterSpacing:.5}}>{label}</label>{children}{hint&&<p style={{margin:"3px 0 0",fontSize:11,color:C.muted,fontStyle:"italic"}}>{hint}</p>}</div>;
+const Chip=({active,color=C.leaf,onClick,children,small})=><button onClick={onClick} style={{padding:small?"4px 10px":"6px 13px",borderRadius:18,border:`1.5px solid ${active?color:C.border}`,background:active?color+"22":C.white,color:active?color:C.muted,cursor:"pointer",fontSize:small?11:12,fontWeight:700,whiteSpace:"nowrap"}}>{children}</button>;
+const Btn=({children,onClick,color=C.leaf,outline,small,disabled,style})=><button onClick={onClick} disabled={disabled} style={{padding:small?"6px 12px":"9px 18px",borderRadius:8,cursor:disabled?"not-allowed":"pointer",border:`1.5px solid ${color}`,fontSize:small?12:13,fontWeight:700,background:outline?C.white:color,color:outline?color:C.white,opacity:disabled?.5:1,...style}}>{children}</button>;
+const Badge=({color,children})=><span style={{background:color+"22",color,border:`1px solid ${color}44`,borderRadius:12,padding:"2px 9px",fontSize:11,fontWeight:700,display:"inline-block"}}>{children}</span>;
+
+function Modal({title,onClose,children}){return <div style={{position:"fixed",inset:0,background:"#0008",zIndex:1000,display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",padding:"20px 10px"}}><div style={{background:C.white,borderRadius:16,width:"100%",maxWidth:680,boxShadow:"0 8px 40px #0004"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 20px",borderBottom:`1px solid ${C.border}`}}><span style={{fontWeight:800,fontSize:15,color:C.soil}}>{title}</span><button onClick={onClose} style={{background:"none",border:"none",fontSize:24,cursor:"pointer",color:C.muted,lineHeight:1}}>×</button></div><div style={{padding:"18px 20px 22px"}}>{children}</div></div></div>;}
+
+function AiResult({text}){return <div>{text.split("\n").map((line,i)=>{const t=line.trim();if(!t)return <div key={i} style={{height:5}}/>;if(/^[1-9][\.\)]\s*[🚁💧🔬⚠️✅📋🌡️🧪🌿⏰]/.test(t)||/^[🚁💧🔬⚠️✅📋🌡️🧪🌿⏰][^\n]{0,80}$/.test(t)){return <div key={i} style={{marginTop:18,marginBottom:5,fontWeight:800,fontSize:14,color:C.soil,borderLeft:`3px solid ${C.leaf}`,paddingLeft:10}}>{t}</div>;}if(/\*\*[^*]+\*\*/.test(t)){const p=t.split(/(\*\*[^*]+\*\*)/g);return <div key={i} style={{fontSize:14,color:C.dark,lineHeight:1.75}}>{p.map((x,j)=>/^\*\*[^*]+\*\*$/.test(x)?<strong key={j} style={{color:C.soil}}>{x.replace(/\*\*/g,"")}</strong>:x)}</div>;}if(/^[-•]/.test(t))return <div key={i} style={{display:"flex",gap:8,fontSize:13,color:C.dark,lineHeight:1.7,paddingLeft:6}}><span style={{color:C.leafLight,flexShrink:0}}>▸</span><span>{t.slice(1).trim()}</span></div>;if(/^[✅⚠️❌🔴🟡🟢🚨]/.test(t)){const clr=/^[✅🟢]/.test(t)?C.ok:/^[⚠️🟡]/.test(t)?C.warn:C.danger;return <div key={i} style={{background:clr+"15",border:`1px solid ${clr}44`,borderRadius:8,padding:"6px 12px",margin:"3px 0",fontSize:13,color:clr,fontWeight:600}}>{t}</div>;}return <div key={i} style={{fontSize:14,color:C.dark,lineHeight:1.75}}>{t}</div>;})}</div>;}
+
+const sg=async(k)=>{try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null;}catch{return null;}};
+const ss=async(k,v)=>{try{await window.storage.set(k,JSON.stringify(v));}catch{}};
+
+// ── DASHBOARD TAB ──────────────────────────────────────────────────────────
+function DashboardTab({clients,treatments,onTab}){
+  const totalHa=treatments.reduce((s,t)=>s+parseFloat(t.parcelArea||0),0).toFixed(1);
+  const luna=new Date().getMonth();
+  const lunaHa=treatments.filter(t=>new Date(t.date).getMonth()===luna).reduce((s,t)=>s+parseFloat(t.parcelArea||0),0).toFixed(1);
+  const prodCount={};
+  treatments.forEach(t=>t.products.forEach(p=>{if(p.name)prodCount[p.name]=(prodCount[p.name]||0)+1;}));
+  const topProd=Object.entries(prodCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const byMonth=Array(12).fill(0);
+  treatments.forEach(t=>{const m=new Date(t.date).getMonth();if(!isNaN(m))byMonth[m]++;});
+  const maxTr=Math.max(...byMonth,1);
+  const clientStats=clients.map(c=>({name:c.name,nr:treatments.filter(t=>t.clientId===c.id).length,ha:treatments.filter(t=>t.clientId===c.id).reduce((s,t)=>s+parseFloat(t.parcelArea||0),0).toFixed(1)})).sort((a,b)=>b.nr-a.nr).slice(0,5);
+
+  return <>
+    <div style={{marginBottom:14}}>
+      <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>📊 Dashboard</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Statistici activitate GRUPO SPIC SRL</p>
+    </div>
+
+    {/* KPI Cards */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+      {[
+        {icon:"👥",label:"Clienți",val:clients.length,color:C.leaf},
+        {icon:"🧪",label:"Tratamente total",val:treatments.length,color:C.sky},
+        {icon:"🌾",label:"Hectare total",val:totalHa+" ha",color:C.amber},
+        {icon:"📅",label:"Hectare luna aceasta",val:lunaHa+" ha",color:C.purple},
+      ].map((k,i)=>(
+        <div key={i} style={{background:C.white,borderRadius:14,padding:"14px 16px",border:`1px solid ${C.border}`,boxShadow:"0 2px 8px #0001"}}>
+          <div style={{fontSize:24,marginBottom:4}}>{k.icon}</div>
+          <div style={{fontSize:22,fontWeight:900,color:k.color}}>{k.val}</div>
+          <div style={{fontSize:11,color:C.muted,fontWeight:600}}>{k.label}</div>
+        </div>
+      ))}
+    </div>
+
+    {/* Grafic activitate lunara */}
+    <Card>
+      <SecH icon="📈" title="Tratamente pe luni"/>
+      <div style={{display:"flex",alignItems:"flex-end",gap:4,height:80,marginBottom:8}}>
+        {byMonth.map((nr,i)=>(
+          <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+            <div style={{width:"100%",background:i===luna?C.leaf:C.leaf+"55",borderRadius:"4px 4px 0 0",height:nr===0?2:Math.max(4,(nr/maxTr)*72),transition:"height .3s"}}/>
+            <span style={{fontSize:8,color:i===luna?C.soil:C.muted,fontWeight:i===luna?800:400}}>{LUNI[i]}</span>
+          </div>
+        ))}
+      </div>
+      {treatments.length===0&&<p style={{fontSize:13,color:C.muted,textAlign:"center"}}>Niciun tratament înregistrat încă.</p>}
+    </Card>
+
+    {/* Top produse */}
+    {topProd.length>0&&<Card>
+      <SecH icon="🧪" title="Produse cel mai des folosite"/>
+      {topProd.map(([nume,nr],i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+          <div style={{fontWeight:700,fontSize:13,color:C.soil,flex:1}}>{i+1}. {nume}</div>
+          <div style={{background:C.leaf+"22",color:C.leaf,borderRadius:12,padding:"2px 10px",fontSize:12,fontWeight:700}}>{nr}x</div>
+        </div>
+      ))}
+    </Card>}
+
+    {/* Top clienti */}
+    {clientStats.length>0&&<Card>
+      <SecH icon="👥" title="Clienți activi"/>
+      {clientStats.map((c,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,padding:"8px 10px",background:C.panel,borderRadius:10}}>
+          <div style={{fontWeight:700,fontSize:13,color:C.soil,flex:1}}>{c.name}</div>
+          <Badge color={C.sky}>{c.nr} trat.</Badge>
+          <Badge color={C.amber}>{c.ha} ha</Badge>
+        </div>
+      ))}
+    </Card>}
+
+    {treatments.length===0&&<Card style={{textAlign:"center",padding:"28px"}}>
+      <div style={{fontSize:40,marginBottom:10}}>📊</div>
+      <div style={{color:C.muted,fontWeight:700,marginBottom:12}}>Începe să înregistrezi tratamente pentru a vedea statistici</div>
+      <Btn onClick={()=>onTab("newTreat")} color={C.leaf}>🧪 Primul tratament</Btn>
+    </Card>}
+  </>;
+}
+
+// ── PIH CALCULATOR ──────────────────────────────────────────────────────────
+function PihBadge({products,date}){
+  if(!date||!products?.length) return null;
+  const maxPih=Math.max(...products.map(p=>{const db=PRODUSE_DB.find(x=>x.nume===p.name);return db?.pih||0;}));
+  if(!maxPih) return null;
+  const treatDate=new Date(date);
+  const minRecoltare=new Date(treatDate.getTime()+maxPih*86400000);
+  const today=new Date();
+  const daysLeft=Math.ceil((minRecoltare-today)/86400000);
+  const expired=daysLeft<=0;
+  return <div style={{background:expired?C.ok+"18":C.warn+"18",border:`1px solid ${expired?C.ok:C.warn}44`,borderRadius:8,padding:"6px 12px",fontSize:12,fontWeight:600,color:expired?C.ok:C.warn}}>
+    {expired?"✅ PIH expirat — recoltare permisă":"⏰ Recoltare permisă din "+minRecoltare.toLocaleDateString("ro-RO")+" ("+daysLeft+" zile)"}
+  </div>;
+}
+
+// ── JURNAL TAB cu PIH ──────────────────────────────────────────────────────
+function JournalTab({treatments,onView,onDel}){
+  const [filterClient,setFilterClient]=useState("");
+  const [filterCrop,setFilterCrop]=useState("");
+  const clients=[...new Set(treatments.map(t=>t.clientName))].filter(Boolean);
+  const filtered=treatments.filter(t=>
+    (!filterClient||t.clientName===filterClient)&&
+    (!filterCrop||t.crop===filterCrop)
+  );
+  return <>
+    <div style={{marginBottom:14}}>
+      <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>📋 Jurnal tratamente ({filtered.length})</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Toate tratamentele, cronologic</p>
+    </div>
+    {treatments.length>0&&<Card style={{padding:"12px 14px",marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div>
+          <label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:3,textTransform:"uppercase"}}>Client</label>
+          <select style={iSt()} value={filterClient} onChange={e=>setFilterClient(e.target.value)}>
+            <option value="">Toți</option>
+            {clients.map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:3,textTransform:"uppercase"}}>Cultură</label>
+          <select style={iSt()} value={filterCrop} onChange={e=>setFilterCrop(e.target.value)}>
+            <option value="">Toate</option>
+            {CROPS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+          </select>
+        </div>
+      </div>
+    </Card>}
+    {filtered.length===0&&<Card style={{textAlign:"center",padding:"32px 20px"}}><div style={{fontSize:40,marginBottom:10}}>📋</div><div style={{fontWeight:700,color:C.muted}}>Niciun tratament{filterClient||filterCrop?" cu filtrele selectate":""}</div></Card>}
+    {filtered.map(t=><Card key={t.id} style={{cursor:"pointer"}} onClick={()=>onView(t)}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:5}}>
+            <span style={{fontWeight:800,fontSize:15,color:C.soil}}>{t.clientName}</span>
+            <Badge color={C.muted}>{t.parcelName}{t.parcelArea?" · "+t.parcelArea+" ha":""}</Badge>
+            <Badge color={C.leaf}>{CROPS.find(c=>c.id===t.crop)?.icon} {t.cropLabel}</Badge>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:6}}>
+            <Badge color={C.sky}>📅 {t.date}</Badge>
+            {t.fenofaza&&<Badge color={C.amber}>{t.fenofaza}</Badge>}
+            {t.interval&&<Badge color={C.purple}>{INTERVALE_ZI.find(x=>x.id===t.interval)?.icon} {INTERVALE_ZI.find(x=>x.id===t.interval)?.label}</Badge>}
+            <Badge color={C.muted}>🌡️{t.temp}°C 💨{t.wind}km/h</Badge>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>
+            {t.products.map((p,i)=><Badge key={i} color={C.soil}>{p.name} {p.dose}{p.unit}</Badge>)}
+          </div>
+          <PihBadge products={t.products} date={t.date}/>
+        </div>
+        <Btn small outline color={C.danger} onClick={e=>{e.stopPropagation();onDel(t.id);}}>✕</Btn>
+      </div>
+    </Card>)}
+  </>;
+}
+
+// ── METEO WIDGET ──────────────────────────────────────────────────────────
+function MeteoWidget({location,onMeteo}){
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState("");
+
+  async function getMeteo(){
+    if(!location){setErr("Adaugă locația parcelei mai întâi.");return;}
+    setLoading(true);setErr("");
+    try{
+      // Use OpenMeteo geocoding + weather (free, no API key)
+      const geoResp=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=ro&format=json`);
+      const geoData=await geoResp.json();
+      if(!geoData.results?.length){setErr("Locație negăsită. Încearcă un nume mai precis.");setLoading(false);return;}
+      const {latitude:lat,longitude:lon,name}=geoData.results[0];
+      const wResp=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m&wind_speed_unit=kmh&timezone=Europe/Bucharest`);
+      const wData=await wResp.json();
+      const cur=wData.current;
+      onMeteo({
+        temp:cur.temperature_2m?.toFixed(1)||"",
+        wind:cur.wind_speed_10m?.toFixed(1)||"",
+        gust:cur.wind_gusts_10m?.toFixed(1)||"",
+        humid:cur.relative_humidity_2m?.toFixed(0)||"",
+        locName:name,
+      });
+    }catch(e){setErr("Eroare preluare meteo: "+e.message);}
+    setLoading(false);
+  }
+
+  return <div style={{marginBottom:10}}>
+    <button onClick={getMeteo} disabled={loading} style={{width:"100%",padding:"9px",border:`1.5px solid ${C.sky}`,borderRadius:8,background:loading?C.muted:C.sky+"18",color:loading?C.white:C.sky,cursor:loading?"not-allowed":"pointer",fontWeight:700,fontSize:13}}>
+      {loading?"⏳ Preiau meteo...":"🌤️ Preia meteo automat pentru parcelă"}
+    </button>
+    {err&&<p style={{fontSize:12,color:C.danger,marginTop:4,fontWeight:600}}>{err}</p>}
+  </div>;
+}
+
+// ── PIN LOCK ──────────────────────────────────────────────────────────────
+function PinLock({onUnlock,savedPin}){
+  const [pin,setPin]=useState("");
+  const [err,setErr]=useState("");
+  const [setup,setSetup]=useState(!savedPin);
+  const [confirm,setConfirm]=useState("");
+
+  function tryUnlock(){
+    if(pin===savedPin){onUnlock();}
+    else{setErr("PIN incorect");setPin("");}
+  }
+  function setupPin(){
+    if(pin.length<4){setErr("PIN minim 4 cifre");return;}
+    if(pin!==confirm){setErr("PIN-urile nu coincid");return;}
+    onUnlock(pin);
+  }
+
+  return <div style={{position:"fixed",inset:0,background:`linear-gradient(135deg,${C.soil},${C.leaf})`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:2000}}>
+    <div style={{fontSize:60,marginBottom:16}}>🚁</div>
+    <div style={{fontWeight:900,fontSize:22,color:"#fff",marginBottom:4}}>AgronoMix AI</div>
+    <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:32}}>GRUPO SPIC SRL</div>
+    <div style={{background:"rgba(255,255,255,.1)",borderRadius:16,padding:"24px 28px",width:"100%",maxWidth:320}}>
+      <div style={{color:"#fff",fontWeight:700,fontSize:14,marginBottom:16,textAlign:"center"}}>
+        {setup?"Configurează PIN de acces":"Introdu PIN-ul"}
+      </div>
+      <input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
+        placeholder="••••" style={{...iSt(),textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:10}}/>
+      {setup&&<input type="password" inputMode="numeric" maxLength={6} value={confirm} onChange={e=>setConfirm(e.target.value.replace(/\D/g,""))}
+        placeholder="Confirmă PIN" style={{...iSt(),textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:10}}/>}
+      {err&&<p style={{color:C.danger,fontSize:12,textAlign:"center",fontWeight:600,marginBottom:8}}>{err}</p>}
+      <button onClick={setup?setupPin:tryUnlock} style={{width:"100%",padding:"12px",background:C.leaf,border:"none",borderRadius:10,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+        {setup?"Setează PIN":"Deblochează"}
+      </button>
+      {!setup&&<button onClick={()=>{setSetup(true);setPin("");setConfirm("");setErr("");}} style={{width:"100%",marginTop:8,padding:"8px",background:"transparent",border:"1px solid rgba(255,255,255,.3)",borderRadius:10,color:"rgba(255,255,255,.7)",fontWeight:600,fontSize:12,cursor:"pointer"}}>
+        Schimbă PIN
+      </button>}
+    </div>
+  </div>;
+}
+
+
+// ── CHAT TAB ──────────────────────────────────────────────────────────────
+function ChatTab(){
+  const [messages,setMessages]=useState([{role:"assistant",text:"Bună ziua! Sunt consultantul tău agronomic AI 🌿\n\nTe pot ajuta cu:\n• Drone agricole și parametri de zbor\n• Produse fitosanitare și compatibilitate\n• Culturi, fenofaze, boli și dăunători\n• Legislație spațiu aerian UAS România\n• Orice altă nelămurire agronomică\n\nÎntreabă liber — scris sau vocal! 🎤"}]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [listening,setListening]=useState(false);
+  const [ttsOn,setTtsOn]=useState(false);
+  const voiceOk="webkitSpeechRecognition" in window||"SpeechRecognition" in window;
+  const ttsOk="speechSynthesis" in window;
+  const recogRef=useRef();
+  const endRef=useRef();
+  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
+
+  function startListen(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR)return;
+    const r=new SR();r.lang="ro-RO";r.continuous=false;r.interimResults=false;
+    r.onstart=()=>setListening(true);
+    r.onresult=e=>{const txt=e.results[0][0].transcript;setInput(p=>p?p+" "+txt:txt);setListening(false);};
+    r.onerror=()=>setListening(false);r.onend=()=>setListening(false);
+    recogRef.current=r;r.start();
+  }
+  function stopListen(){recogRef.current?.stop();setListening(false);}
+  function speak(text){
+    if(!ttsOk||!ttsOn)return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text.replace(/[✅⚠️❌🔴🟡🟢🚨🌿🚁💧🔬📋🌡️]/g,"").replace(/\*\*/g,"").slice(0,600));
+    u.lang="ro-RO";u.rate=0.95;
+    const voices=window.speechSynthesis.getVoices();
+    const ro=voices.find(v=>v.lang.startsWith("ro"));if(ro)u.voice=ro;
+    window.speechSynthesis.speak(u);
+  }
+  async function send(){
+    const txt=input.trim();if(!txt||loading)return;
+    const hist=[...messages,{role:"user",text:txt}];
+    setMessages(hist);setInput("");setLoading(true);
+    try{
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,
+          system:"Consultant agronomic expert pentru operatori drone agricole România. Specializări: agronomie, fitosanitare, drone DJI/XAG, legislație UAS AACR/ROMATSA. Răspunzi în română, clar și practic, max 300 cuvinte. Semnalezi clar orice risc.",
+          messages:hist.map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.text}))})});
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error.message);
+      const reply=data.content.map(b=>b.text||"").join("");
+      setMessages(p=>[...p,{role:"assistant",text:reply}]);
+      speak(reply);
+    }catch(e){setMessages(p=>[...p,{role:"assistant",text:"❌ Eroare: "+e.message}]);}
+    setLoading(false);
+  }
+  const QUICK=["Ce diferență e între 2 și 4 duze la T50?","Cum calculez volumul de apă per hectar?","Pot amesteca fungicid cu insecticid?","Care e temperatura optimă pentru erbicide?","Cum protejez stupii la tratament?"];
+  return <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 180px)",minHeight:400}}>
+    <div style={{marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div><h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>💬 Consultant AI</h2><p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Orice întrebare agronomică</p></div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        {ttsOk&&<label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontSize:12,fontWeight:700,color:ttsOn?C.leaf:C.muted}}><input type="checkbox" checked={ttsOn} onChange={e=>setTtsOn(e.target.checked)} style={{width:14,height:14}}/>🔊</label>}
+        <button onClick={()=>setMessages([{role:"assistant",text:"Conversație nouă. Cu ce te pot ajuta? 🌿"}])} style={{padding:"5px 10px",background:"none",border:`1px solid ${C.border}`,borderRadius:8,cursor:"pointer",fontSize:11,color:C.muted}}>🗑️</button>
+      </div>
+    </div>
+    {messages.length<=1&&<div style={{marginBottom:10,display:"flex",flexWrap:"wrap",gap:6}}>
+      {QUICK.map((q,i)=><button key={i} onClick={()=>setInput(q)} style={{padding:"6px 11px",background:C.panel,border:`1px solid ${C.border}`,borderRadius:14,cursor:"pointer",fontSize:11,color:C.soil,fontWeight:600}}>{q}</button>)}
+    </div>}
+    <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,paddingBottom:4}}>
+      {messages.map((m,i)=>(
+        <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
+          <div style={{maxWidth:"85%",padding:"10px 14px",borderRadius:14,fontSize:14,lineHeight:1.7,background:m.role==="user"?`linear-gradient(135deg,${C.soil},${C.leaf})`:"#fff",color:m.role==="user"?"#fff":C.dark,border:m.role==="assistant"?`1px solid ${C.border}`:"none",borderBottomRightRadius:m.role==="user"?4:14,borderBottomLeftRadius:m.role==="assistant"?4:14}}>
+            {m.role==="assistant"?<AiResult text={m.text}/>:m.text}
+          </div>
+        </div>
+      ))}
+      {loading&&<div style={{display:"flex"}}><div style={{padding:"10px 16px",background:"#fff",border:`1px solid ${C.border}`,borderRadius:14,borderBottomLeftRadius:4,display:"flex",gap:4,alignItems:"center"}}>
+        {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:C.leaf,animation:`bounce 1.2s ${i*.2}s infinite ease-in-out`}}/>)}
+      </div></div>}
+      <div ref={endRef}/>
+    </div>
+    <div style={{paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+      <div style={{display:"flex",gap:6,alignItems:"flex-end"}}>
+        <textarea value={input} onChange={e=>setInput(e.target.value)} rows={2}
+          placeholder={listening?"🎤 Ascult...":"Scrie întrebarea..."}
+          style={{flex:1,padding:"9px 12px",border:`1.5px solid ${input?C.leaf:C.border}`,borderRadius:10,fontSize:14,fontFamily:"inherit",resize:"none",outline:"none",color:C.dark,background:listening?C.leaf+"0D":"#fff"}}/>
+        {voiceOk&&<button onMouseDown={startListen} onMouseUp={stopListen} onTouchStart={startListen} onTouchEnd={stopListen}
+          style={{flexShrink:0,width:44,height:44,borderRadius:10,border:`2px solid ${listening?C.danger:C.leaf}`,background:listening?C.danger+"18":C.leaf+"18",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {listening?"⏹️":"🎤"}
+        </button>}
+        <button onClick={send} disabled={!input.trim()||loading}
+          style={{flexShrink:0,width:44,height:44,borderRadius:10,border:"none",background:input.trim()&&!loading?`linear-gradient(135deg,${C.soil},${C.leaf})`:C.border,cursor:input.trim()&&!loading?"pointer":"not-allowed",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          ➤
+        </button>
+      </div>
+      <p style={{margin:"5px 0 0",fontSize:11,color:C.muted,textAlign:"center"}}>{voiceOk?"🎤 Ține apăsat pentru a vorbi · ":""}Apasă ➤ pentru a trimite</p>
+    </div>
+    <style>{`@keyframes bounce{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}`}</style>
+  </div>;
+}
+
+
+// ── PRODUSE TAB ───────────────────────────────────────────────────────────
+function ProduseTab({addingToTreatment,onAddToTreatment,onCancelAdd}){
+  const [search,setSearch]=useState("");
+  const [catF,setCatF]=useState("");
+  const [cropF,setCropF]=useState("");
+  const [viewProd,setViewProd]=useState(null);
+  const cats=[...new Set(PRODUSE_DB.map(p=>p.cat))];
+  const filtered=useMemo(()=>PRODUSE_DB.filter(p=>{
+    const q=search.toLowerCase();
+    return(!q||p.nume.toLowerCase().includes(q)||p.sa.toLowerCase().includes(q))&&(!catF||p.cat===catF)&&(!cropF||p.culturi.includes(cropF));
+  }),[search,catF,cropF]);
+  return <>
+    {addingToTreatment&&<div style={{background:C.leaf+"18",border:`1.5px solid ${C.leaf}`,borderRadius:12,padding:"10px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{fontWeight:700,fontSize:13,color:C.leaf}}>🧪 Selectează produs pentru tratament</div>
+      <button onClick={onCancelAdd} style={{background:"none",border:`1px solid ${C.muted}`,borderRadius:8,padding:"4px 10px",cursor:"pointer",color:C.muted,fontSize:12}}>✕</button>
+    </div>}
+    <div style={{marginBottom:12}}><h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>🌿 Produse DB ({filtered.length}/{PRODUSE_DB.length})</h2></div>
+    <Card style={{padding:"12px 14px",marginBottom:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+        <div><label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:3,textTransform:"uppercase"}}>Caută</label><input style={iSt()} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Nume, SA..."/></div>
+        <div><label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:3,textTransform:"uppercase"}}>Categorie</label>
+          <select style={iSt()} value={catF} onChange={e=>setCatF(e.target.value)}>
+            <option value="">Toate</option>{cats.map(c=><option key={c} value={c}>{CAT_ICONS[c]} {c}</option>)}
+          </select>
+        </div>
+        <div><label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:3,textTransform:"uppercase"}}>Cultură</label>
+          <select style={iSt()} value={cropF} onChange={e=>setCropF(e.target.value)}>
+            <option value="">Toate</option>{CROPS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+          </select>
+        </div>
+      </div>
+    </Card>
+    {filtered.map(prod=>{
+      const col=CAT_COLORS[prod.cat]||C.muted;
+      const open=viewProd?.id===prod.id;
+      return <Card key={prod.id} style={{borderLeft:`4px solid ${col}`,cursor:"pointer"}} onClick={()=>setViewProd(open?null:prod)}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
+              <span style={{fontWeight:800,fontSize:14,color:C.soil}}>{prod.nume}</span>
+              <Badge color={col}>{CAT_ICONS[prod.cat]} {prod.cat}</Badge>
+              {prod.pih>0&&<Badge color={C.muted}>⏱️ PIH: {prod.pih}z</Badge>}
+              {prod.derive&&<Badge color={C.danger}>🚨 Derivă</Badge>}
+              {prod.albine&&<Badge color={C.amber}>🐝 Albine</Badge>}
+            </div>
+            <div style={{fontSize:12,color:C.muted,marginBottom:4}}><span style={{fontWeight:600}}>SA:</span> {prod.sa}</div>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap",fontSize:12}}>
+              <span style={{background:C.panel,borderRadius:6,padding:"2px 8px",color:C.soil,fontWeight:600}}>📋 {prod.doza_et}</span>
+              <span style={{background:C.leafLight+"22",borderRadius:6,padding:"2px 8px",color:C.leaf,fontWeight:700}}>🚁 {prod.doza_drona}</span>
+            </div>
+          </div>
+          {addingToTreatment&&<button onClick={e=>{e.stopPropagation();onAddToTreatment(prod);}} style={{flexShrink:0,padding:"7px 12px",background:C.leaf,border:"none",borderRadius:8,color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer"}}>+ Add</button>}
+        </div>
+        {open&&<div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.border}`}}>
+          <div style={{fontSize:13,color:C.dark,marginBottom:8}}>{prod.note}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {prod.culturi.map(cid=>{const c=CROPS.find(x=>x.id===cid);return c?<Badge key={cid} color={C.muted}>{c.icon} {c.label}</Badge>:null;})}
+          </div>
+          {!addingToTreatment&&<button onClick={e=>{e.stopPropagation();onAddToTreatment(prod);}} style={{marginTop:10,padding:"8px 16px",background:C.leaf,border:"none",borderRadius:8,color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>🧪 Folosește în tratament</button>}
+        </div>}
+      </Card>;
+    })}
+  </>;
+}
+
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────
+export default function App(){
+  const [tab,setTab]=useState("dash");
+  const [clients,setClients]=useState([]);
+  const [treatments,setTreatments]=useState([]);
+  const [freeParcels,setFreeParcels]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [pin,setPin]=useState(null);        // null=not set, ""=disabled, "1234"=set
+  const [unlocked,setUnlocked]=useState(false);
+  const [logoUrl,setLogoUrl]=useState(LOGO);
+  const [lang,setLang]=useState("ro");
+  const [showNC,setShowNC]=useState(false);
+  const [editCL,setEditCL]=useState(null);
+  const [showNP,setShowNP]=useState(null);
+  const [editPL,setEditPL]=useState(null);
+  const [openCId,setOpenCId]=useState(null);
+  const [viewTr,setViewTr]=useState(null);
+  const [addProdToTF,setAddProdToTF]=useState(false);
+  const [assignParcel,setAssignParcel]=useState(null);
+  const [tf,setTf]=useState(blankTF());
+  const logoRef=useRef();
+
+  function blankTF(){return{clientId:"",parcelId:"",date:new Date().toISOString().slice(0,10),crop:"",fenofaza:"",altaCult:"",inaltime:"",droneBrand:"DJI",droneModel:"Agras T50",nrDuze:"2",products:[{name:"",dose:"",unit:"L/ha",type:"fungicid"}],adjuvant:false,adjName:"",adjDose:"",temp:"",wind:"",gust:"",humid:"",ph:"",interval:"dimineata",prevTr:[],freeNote:"",photos:[],aiResult:"",aiLoading:false,aiError:""};}
+
+  useEffect(()=>{(async()=>{
+    const c=await sg("spic:clients");const t=await sg("spic:treatments");
+    const fp=await sg("spic:freeparcels");const p=await sg("spic:pin");
+    const l=await sg("spic:logo");
+    const lg=await sg("spic:lang");
+    if(c)setClients(c);if(t)setTreatments(t);if(fp)setFreeParcels(fp);
+    if(p!==null)setPin(p);else setUnlocked(true);
+    if(l)setLogoUrl(l);
+    if(lg)setLang(lg);
+    setLoading(false);
+  })();},[]);
+  useEffect(()=>{if(!loading){ss("spic:clients",clients);}},[clients,loading]);
+  useEffect(()=>{if(!loading){ss("spic:treatments",treatments);}},[treatments,loading]);
+  useEffect(()=>{if(!loading){ss("spic:freeparcels",freeParcels);}},[freeParcels,loading]);
+
+  function handleUnlock(newPin){
+    if(newPin){setPin(newPin);ss("spic:pin",newPin);}
+    setUnlocked(true);
+  }
+  function handleLogo(e){
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{setLogoUrl(r.result);ss("spic:logo",r.result);};
+    r.readAsDataURL(f);
+  }
+
+  function addClient(d){setClients(p=>[...p,{id:Date.now().toString(),createdAt:new Date().toISOString(),...d,parcels:[]}]);}
+  function saveClient(id,d){setClients(p=>p.map(c=>c.id===id?{...c,...d}:c));setTreatments(p=>p.map(t=>t.clientId===id?{...t,clientName:d.name}:t));}
+  function addParcel(cid,d){
+    if(cid==="free")setFreeParcels(p=>[...p,{id:Date.now().toString(),...d}]);
+    else setClients(p=>p.map(c=>c.id===cid?{...c,parcels:[...c.parcels,{id:Date.now().toString(),...d}]}:c));
+  }
+  function saveParcel(cid,pid,d){setClients(p=>p.map(c=>c.id===cid?{...c,parcels:c.parcels.map(p=>p.id===pid?{...p,...d}:p)}:c));}
+  function editFreeParcel(pid,d){setFreeParcels(p=>p.map(x=>x.id===pid?{...x,...d}:x));}
+  function delClient(id){if(!confirm("Ștergi clientul?"))return;setClients(p=>p.filter(c=>c.id!==id));setTreatments(p=>p.filter(t=>t.clientId!==id));if(openCId===id)setOpenCId(null);}
+  function delParcel(cid,pid){if(!confirm("Ștergi parcela?"))return;setClients(p=>p.map(c=>c.id===cid?{...c,parcels:c.parcels.filter(p=>p.id!==pid)}:c));}
+  function delFreeParcel(pid){if(!confirm("Ștergi parcela?"))return;setFreeParcels(p=>p.filter(x=>x.id!==pid));}
+  function delTreat(id){if(!confirm("Ștergi tratamentul?"))return;setTreatments(p=>p.filter(t=>t.id!==id));if(viewTr?.id===id)setViewTr(null);}
+  function assignFreeParcel(pid,cid){
+    const p=freeParcels.find(x=>x.id===pid);if(!p||!cid)return;
+    setClients(prev=>prev.map(c=>c.id===cid?{...c,parcels:[...c.parcels,{...p,id:Date.now().toString()}]}:c));
+    setFreeParcels(prev=>prev.filter(x=>x.id!==pid));setAssignParcel(null);
+  }
+
+  const updTF=(f,v)=>setTf(p=>({...p,[f]:v}));
+  const updProd=(i,f,v)=>setTf(p=>({...p,products:p.products.map((x,j)=>j===i?{...x,[f]:v}:x)}));
+  const tfParcels=tf.clientId?(clients.find(c=>c.id===tf.clientId)?.parcels||[]):[];
+  const fenofazeList=FENOFAZE[tf.crop]||FENOFAZE.alt;
+  const hasHerbicid=tf.products.some(p=>p.type==="erbicid");
+  const windNum=parseFloat(tf.wind)||0;
+  const gustNum=parseFloat(tf.gust)||0;
+
+  function addProdFromDB(prod){
+    const unit=prod.doza_drona?.includes("kg")?"kg/ha":prod.doza_drona?.includes("mL")?"mL/ha":"L/ha";
+    const dose=(prod.doza_drona||"").replace(/[^0-9.,–\-]/g,"").trim()||"";
+    setTf(p=>({...p,products:[...p.products.filter(x=>x.name),{name:prod.nume,dose,unit,type:prod.cat}]}));
+    setAddProdToTF(false);setTab("newTreat");
+  }
+
+  function buildPrompt(f,client,parcel){
+    const cl=f.crop==="alt"?f.altaCult:CROPS.find(c=>c.id===f.crop)?.label||f.crop;
+    const pr=f.products.filter(p=>p.name).map((p,i)=>`${i+1}. ${p.name} ${p.dose}${p.unit}(${p.type})`).join(" | ")||"nespecificate";
+    const adj=f.adjuvant?` Adjuvant:${f.adjName} ${f.adjDose}mL/100L`:"";
+    const iv=INTERVALE_ZI.find(x=>x.id===f.interval);
+    const hb=f.products.some(p=>p.type==="erbicid");
+    const np=f.products.filter(p=>p.name).length;
+    const ds=DRONE_DB[f.droneBrand]?.modele[f.droneModel]||Object.values(DRONE_DB.DJI.modele)[0];
+    const rl=ds.rafale_max||ds.vant_max+3;
+    const isT50=f.droneModel==="Agras T50";
+    return `Inginer agronom expert drone agricole. Calculează NUMERIC parametrii pentru ${f.droneBrand} ${f.droneModel}.
+
+DRONĂ: rezervor ${ds.rezervor}L${ds.solid?"/solid "+ds.vol_solid_max+"kg":""} | ${isT50?f.nrDuze+" duze":ds.duze+" duze"} | volum ${ds.vol_min}-${ds.vol_max}L/ha | lățime max ${ds.latime_max}m | viteză max ${ds.viteza_max}m/s | particule ${ds.particule_min}-${ds.particule_max}µm | vânt max ${ds.vant_max}km/h | rafale max ${rl}km/h | autonomie ~${ds.rezervor<=40?"10-12":"20-25"}min/zbor
+${isT50?(f.nrDuze==="2"?"Config T50: 2 duze - câmp deschis":"Config T50: 4 duze - viță de vie/livadă"):""}
+
+CULTURĂ: ${cl} | fenofază: ${f.fenofaza||"—"} | înălțime: ${f.inaltime||"?"}cm
+PRODUSE(${np}): ${pr}${adj}
+METEO: ${f.temp||"?"}°C | vânt ${f.wind||"?"}km/h | rafale ${f.gust||"?"}km/h | umid ${f.humid||"?"}% | pH ${f.ph||"—"}
+INTERVAL: ${iv?.label}(${iv?.hint}) | CLIENT: ${client?.name||"—"} | parcelă: ${parcel?.name||"—"} ${parcel?.area||"?"}ha
+ANTERIOARE: ${f.prevTr.join(", ")||"niciunul"}${f.freeNote?" | "+f.freeNote:""}
+
+RĂSPUNDE structurat în română:
+1. 🌡️ METEO — ✅/⚠️/❌ fiecare parametru față de limitele ${f.droneModel}(vânt max ${ds.vant_max}, rafale max ${rl}km/h)
+2. ⏰ INTERVAL — evaluează ${iv?.label}; dacă nu e optim recomandă altul
+3. 🔬 COMPATIBILITATE & PREPARARE
+${np>=2?"Analizează FIECARE pereche: ✅/⚠️/❌ + motiv chimic + alternativă dacă incompatibil. ORDINE REZERVOR: Pasul1→2→... cu motivul, pH optim, jar test":"Compatibilitate și ordine preparare."}
+${hb?"🚨 ERBICID: distanță siguranță vecini, condiții interzicere, oră risc minim derivă":""}
+4. 💧 VOLUM APĂ — valoare precisă L/ha(${ds.vol_min}-${ds.vol_max}L/ha)
+5. 🚁 PARAMETRI ${f.droneModel} — NUMERIC: Altitudine: X.Xm | Lățime: Xm(max ${ds.latime_max}m) | Viteză: X.Xm/s | Particule: XXX-XXXµm | Marjă mapare: Xm
+${parcel?.area?"Nr. bateriei/rezervoare pentru "+parcel.area+"ha (autonomie ~"+(ds.rezervor<=40?"10-12":"20-25")+"min)":""}
+6. ⚠️ RISCURI — fitotoxicitate, retrăgere câmp(ore), PPE, albine, ape
+7. 📋 GO ✅ / CONDIȚIONAT ⚠️ / NO-GO ❌ — rezumat 4-5 rânduri`;
+  }
+
+  async function runAI(){
+    const client=clients.find(c=>c.id===tf.clientId);
+    const parcel=client?.parcels.find(p=>p.id===tf.parcelId);
+    if(!tf.crop){setTf(p=>({...p,aiError:"Selectează cultura."}));return;}
+    setTf(p=>({...p,aiLoading:true,aiError:"",aiResult:""}));
+    try{
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,
+          system:"Inginer agronom expert drone agricole și chimia produselor fitosanitare. Recomandări precise numerice în română. Vânt peste limita dronei=pericol; erbicide=avertizare derivă; amestecuri=analiză pereche cu pereche+motiv chimic+alternativă+ordine exactă preparare rezervor.",
+          messages:[{role:"user",content:buildPrompt(tf,client,parcel)}]})});
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error.message);
+      setTf(p=>({...p,aiResult:data.content.map(b=>b.text||"").join(""),aiLoading:false}));
+    }catch(e){setTf(p=>({...p,aiError:"Eroare: "+e.message,aiLoading:false}));}
+  }
+
+  function saveTreatment(){
+    if(!tf.aiResult){alert("Generează mai întâi recomandările AI.");return;}
+    const client=clients.find(c=>c.id===tf.clientId);
+    const parcel=client?.parcels.find(p=>p.id===tf.parcelId);
+    const cropLabel=tf.crop==="alt"?tf.altaCult:CROPS.find(c=>c.id===tf.crop)?.label||tf.crop;
+    setTreatments(p=>[{id:Date.now().toString(),createdAt:new Date().toISOString(),date:tf.date,
+      clientId:tf.clientId,clientName:client?.name||"—",parcelId:tf.parcelId,parcelName:parcel?.name||"—",parcelArea:parcel?.area||"",
+      crop:tf.crop,cropLabel,fenofaza:tf.fenofaza,inaltime:tf.inaltime,
+      products:[...tf.products.filter(p=>p.name)],adjuvant:tf.adjuvant,adjName:tf.adjName,adjDose:tf.adjDose,
+      temp:tf.temp,wind:tf.wind,gust:tf.gust,humid:tf.humid,ph:tf.ph,
+      interval:tf.interval,prevTr:[...tf.prevTr],freeNote:tf.freeNote,aiResult:tf.aiResult,
+      photos:tf.photos||[]},...p]);
+    setTf(blankTF());setTab("journal");
+  }
+
+  const swipeStart=useRef(null);
+
+  if(loading)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:12,background:C.soil}}><div style={{fontSize:50}}>🚁</div><div style={{color:"#fff",fontWeight:800,fontSize:18}}>AgronoMix AI</div><div style={{color:"rgba(255,255,255,.6)",fontSize:13}}>Se încarcă...</div></div>;
+  if(pin&&!unlocked)return <PinLock savedPin={pin} onUnlock={handleUnlock}/>;
+
+  const T=TRANSLATIONS[lang]||TRANSLATIONS.ro;
+  const TABS=[["dash","📊",T.dash],["clients","👥",T.clients],["parceleLibere","✈️",T.parceleLibere],["journal","📋",T.journal],["calendar","🗓️",T.calendar],["pih","⏰",T.pih],["tarifare","💰",T.tarifare],["harta","🗺️",T.harta],["recomandari","🤖",T.recomandari],["newTreat","🧪",T.newTreat],["produse","🌿",T.produse],["chat","💬",T.chat],["settings","⚙️",T.settings]];
+  const tabIds=TABS.map(t=>t[0]);
+
+  // Swipe left/right navigation
+  function onTouchStart(e){swipeStart.current=e.touches[0].clientX;}
+  function onTouchEnd(e){
+    if(!swipeStart.current)return;
+    const dx=e.changedTouches[0].clientX-swipeStart.current;
+    swipeStart.current=null;
+    if(Math.abs(dx)<60)return;
+    const idx=tabIds.indexOf(tab);
+    if(dx<0&&idx<tabIds.length-1)setTab(tabIds[idx+1]);
+    if(dx>0&&idx>0)setTab(tabIds[idx-1]);
+  }
+
+  return <div style={{background:C.cream,minHeight:"100vh",fontFamily:"'Inter','Segoe UI',system-ui,sans-serif",color:C.dark}} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    {/* HEADER */}
+    <div style={{background:`linear-gradient(135deg,${C.soil} 0%,${C.leaf} 100%)`,padding:"10px 14px",position:"sticky",top:0,zIndex:100}}>
+      <div style={{maxWidth:760,margin:"0 auto",display:"flex",alignItems:"center",gap:10}}>
+        {logoUrl
+          ?<img src={logoUrl} alt="Logo" style={{width:38,height:38,borderRadius:8,objectFit:"contain",background:"rgba(255,255,255,.9)",padding:2,cursor:"pointer",flexShrink:0}} onClick={()=>logoRef.current.click()}/>
+          :<div onClick={()=>logoRef.current.click()} style={{width:38,height:38,borderRadius:8,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:22}} title="Click pentru a adăuga logo">🚁</div>}
+        <input ref={logoRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleLogo}/>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:900,fontSize:15,color:"#fff",letterSpacing:-.3}}>AgronoMix AI</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,.6)"}}>GRUPO SPIC S.R.L. · CUI 52449798 · {tf.droneBrand} {tf.droneModel}</div>
+        </div>
+      </div>
+      {/* NAV TABS */}
+      <div style={{maxWidth:760,margin:"6px auto 0",overflowX:"auto",display:"flex",gap:1,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
+        {TABS.map(([id,icon,lbl])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{padding:"7px 10px",border:"none",borderRadius:"7px 7px 0 0",cursor:"pointer",background:tab===id?C.cream:"transparent",color:tab===id?C.soil:"rgba(255,255,255,.7)",fontWeight:700,fontSize:10,whiteSpace:"nowrap",flexShrink:0,borderBottom:tab===id?"2px solid "+C.cream:"2px solid transparent"}}>
+            {icon} {lbl}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div style={{maxWidth:760,margin:"0 auto",padding:"14px 12px 40px"}}>
+
+      {tab==="dash"&&<DashboardTab clients={clients} treatments={treatments} onTab={setTab}/>}
+
+      {tab==="clients"&&<ClientsTab clients={clients} treatments={treatments} openCId={openCId} setOpenCId={setOpenCId}
+        onNewClient={()=>setShowNC(true)} onEditClient={setEditCL} onDelClient={delClient}
+        onNewParcel={setShowNP} onEditParcel={setEditPL} onDelParcel={delParcel}
+        onViewTreat={setViewTr} onNewTreat={(cid)=>{updTF("clientId",cid);setTab("newTreat");}}/>}
+
+      {tab==="parceleLibere"&&<ParceleLibereTab freeParcels={freeParcels} clients={clients}
+        onNew={()=>setShowNP("free")} onEdit={p=>setEditPL({free:true,parcel:p})}
+        onDel={delFreeParcel} onAssign={setAssignParcel} onViewTreat={setViewTr}/>}
+
+      {tab==="journal"&&<JournalTab treatments={treatments} onView={setViewTr} onDel={delTreat}/>}
+
+      {tab==="calendar"&&<CalendarTab treatments={treatments} onView={setViewTr}/>}
+
+      {tab==="pih"&&<PihTab treatments={treatments} onView={setViewTr}/>}
+
+      {tab==="tarifare"&&<TarifareTab clients={clients} treatments={treatments}/>}
+
+      {tab==="harta"&&<HartaTab clients={clients} freeParcels={freeParcels}/>}
+
+      {tab==="recomandari"&&<RecomandariTab clients={clients} treatments={treatments}/>}
+
+
+      {tab==="newTreat"&&<TreatmentForm tf={tf} updTF={updTF} updProd={updProd}
+        clients={clients} tfParcels={tfParcels} fenofazeList={fenofazeList}
+        hasHerbicid={hasHerbicid} windNum={windNum} gustNum={gustNum}
+        setTf={setTf} blankTF={blankTF} onNewClient={()=>setShowNC(true)}
+        onRunAI={runAI} onSave={saveTreatment}
+        onOpenDB={()=>{setAddProdToTF(true);setTab("produse");}}/>}
+
+      {tab==="produse"&&<ProduseTab addingToTreatment={addProdToTF} onAddToTreatment={addProdFromDB} onCancelAdd={()=>setAddProdToTF(false)}/>}
+
+      {tab==="chat"&&<ChatTab treatments={treatments} clients={clients}/>}
+
+      {tab==="settings"&&<SettingsTab pin={pin} onSetPin={(p)=>{setPin(p);ss("spic:pin",p);}} logoUrl={logoUrl} onLogoClick={()=>logoRef.current.click()} onRemoveLogo={()=>{setLogoUrl(LOGO);ss("spic:logo","");}} clients={clients} treatments={treatments} freeParcels={freeParcels} lang={lang} onLang={(l)=>{setLang(l);ss("spic:lang",l);}}/>}
+
+      {/* FOOTER */}
+      <div style={{marginTop:32,paddingTop:16,borderTop:`1px solid ${C.border}`,textAlign:"center",paddingBottom:12}}>
+        <img src={LOGO} alt="GRUPO SPIC" style={{height:28,objectFit:"contain",marginBottom:6,opacity:.7}}/>
+        <div style={{fontSize:11,color:C.muted,lineHeight:1.7}}>
+          © {new Date().getFullYear()} GRUPO SPIC S.R.L. · Toate drepturile rezervate
+        </div>
+        <div style={{fontSize:10,color:C.muted,marginTop:2}}>
+          Aplicație proprietară · Reproducerea sau copierea fără acordul scris al GRUPO SPIC S.R.L. este interzisă
+        </div>
+        <div style={{fontSize:10,color:C.muted,marginTop:2}}>
+          AgronoMix AI v2.0 · Creat în {new Date().getFullYear()} · Powered by Claude AI
+        </div>
+      </div>
+    </div>
+
+    {showNC&&<ClientModal onSave={d=>{addClient(d);setShowNC(false);}} onClose={()=>setShowNC(false)}/>}
+    {editCL&&<ClientModal initial={editCL} onSave={d=>{saveClient(editCL.id,d);setEditCL(null);}} onClose={()=>setEditCL(null)}/>}
+    {showNP&&<ParcelModal onSave={d=>{addParcel(showNP,d);setShowNP(null);}} onClose={()=>setShowNP(null)}/>}
+    {editPL&&!editPL.free&&<ParcelModal initial={editPL.parcel} onSave={d=>{saveParcel(editPL.clientId,editPL.parcel.id,d);setEditPL(null);}} onClose={()=>setEditPL(null)}/>}
+    {editPL?.free&&<ParcelModal initial={editPL.parcel} onSave={d=>{editFreeParcel(editPL.parcel.id,d);setEditPL(null);}} onClose={()=>setEditPL(null)}/>}
+    {viewTr&&<TreatModal t={viewTr} onClose={()=>setViewTr(null)} onDelete={()=>{delTreat(viewTr.id);setViewTr(null);}}/>}
+    {assignParcel&&<Modal title={"👤 Atribuie — "+assignParcel.name} onClose={()=>setAssignParcel(null)}>
+      <p style={{fontSize:13,color:C.muted,marginBottom:14}}>Selectează clientul pentru această parcelă:</p>
+      {clients.length===0&&<div style={{background:C.bluePale,borderRadius:10,padding:"12px",fontSize:13,color:C.blue}}>Nu ai clienți înregistrați.</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:7,maxHeight:300,overflowY:"auto"}}>
+        {clients.map(c=><button key={c.id} onClick={()=>assignFreeParcel(assignParcel.id,c.id)} style={{padding:"11px 14px",background:C.panel,border:`1.5px solid ${C.border}`,borderRadius:10,cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><div style={{fontWeight:700,fontSize:14,color:C.soil}}>{c.name}</div>{c.village&&<div style={{fontSize:12,color:C.muted}}>📍 {c.village}</div>}</div>
+          <span style={{color:C.leaf,fontWeight:800,fontSize:13}}>Atribuie →</span>
+        </button>)}
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginTop:12}}><Btn outline color={C.muted} onClick={()=>setAssignParcel(null)}>Anulează</Btn></div>
+    </Modal>}
+  </div>;
+}
+
+
+// ── SETTINGS TAB ──────────────────────────────────────────────────────────
+function SettingsTab({pin,onSetPin,logoUrl,onLogoClick,onRemoveLogo,clients,treatments,freeParcels,lang,onLang}){
+  const [newPin,setNewPin]=useState("");
+  const [confirmPin,setConfirmPin]=useState("");
+  const [pinMsg,setPinMsg]=useState("");
+
+  function savePin(){
+    if(newPin.length<4){setPinMsg("Minim 4 cifre.");return;}
+    if(newPin!==confirmPin){setPinMsg("PIN-urile nu coincid.");return;}
+    onSetPin(newPin);setPinMsg("✅ PIN salvat!");setNewPin("");setConfirmPin("");
+  }
+  function removePin(){if(confirm("Elimini protecția PIN?")){onSetPin("");setPinMsg("✅ PIN eliminat.");}}
+
+  const totalHa=treatments.reduce((s,t)=>s+parseFloat(t.parcelArea||0),0).toFixed(1);
+
+  return <>
+    <div style={{marginBottom:14}}><h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>⚙️ Setări</h2></div>
+
+    <Card>
+      <SecH icon="🖼️" title="Logo companie"/>
+      <p style={{fontSize:13,color:C.muted,marginBottom:12}}>Logo-ul apare în header. Apasă 🚁 din header sau butonul de mai jos pentru a-l schimba.</p>
+      {logoUrl&&<div style={{marginBottom:12}}>
+        <img src={logoUrl} alt="Logo" style={{height:60,borderRadius:8,objectFit:"contain",border:`1px solid ${C.border}`,background:C.panel,padding:4}}/>
+      </div>}
+      <div style={{display:"flex",gap:8}}>
+        <Btn onClick={onLogoClick} color={C.leaf}>{logoUrl?"🔄 Schimbă logo":"📷 Adaugă logo"}</Btn>
+        {logoUrl&&<Btn outline color={C.danger} onClick={onRemoveLogo}>🗑️ Elimină</Btn>}
+      </div>
+    </Card>
+
+    <Card>
+      <SecH icon="🔒" title="PIN de acces"/>
+      <p style={{fontSize:13,color:C.muted,marginBottom:12}}>Protejează aplicația cu un cod PIN de 4-6 cifre.</p>
+      {pin&&<div style={{background:C.ok+"18",border:`1px solid ${C.ok}44`,borderRadius:8,padding:"8px 12px",fontSize:13,color:C.ok,fontWeight:600,marginBottom:12}}>🔒 PIN activ — aplicația este protejată</div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+        <FL label="PIN nou"><input type="password" inputMode="numeric" maxLength={6} style={iSt()} value={newPin} onChange={e=>setNewPin(e.target.value.replace(/\D/g,""))} placeholder="••••"/></FL>
+        <FL label="Confirmă PIN"><input type="password" inputMode="numeric" maxLength={6} style={iSt()} value={confirmPin} onChange={e=>setConfirmPin(e.target.value.replace(/\D/g,""))} placeholder="••••"/></FL>
+      </div>
+      {pinMsg&&<p style={{fontSize:12,color:pinMsg.startsWith("✅")?C.ok:C.danger,fontWeight:600,marginBottom:8}}>{pinMsg}</p>}
+      <div style={{display:"flex",gap:8}}>
+        <Btn onClick={savePin} color={C.leaf}>💾 Setează PIN</Btn>
+        {pin&&<Btn outline color={C.danger} onClick={removePin}>🔓 Elimină PIN</Btn>}
+      </div>
+    </Card>
+
+    <Card>
+      <SecH icon="📊" title="Sumar date"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        {[["👥 Clienți",clients.length],["🧪 Tratamente",treatments.length],["✈️ Parcele libere",freeParcels.length],["🌾 Hectare totale",totalHa+" ha"]].map(([l,v],i)=>(
+          <div key={i} style={{background:C.panel,borderRadius:10,padding:"10px 12px"}}>
+            <div style={{fontSize:11,color:C.muted,fontWeight:600}}>{l}</div>
+            <div style={{fontSize:20,fontWeight:900,color:C.soil,marginTop:2}}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+
+    <Card>
+      <SecH icon="🌐" title="Limbă interfață"/>
+      <p style={{fontSize:13,color:C.muted,marginBottom:12}}>Selectează limba dorită pentru interfața aplicației.</p>
+      <div style={{display:"flex",gap:8}}>
+        {[["ro","🇷🇴 Română"],["en","🇬🇧 English"],["es","🇪🇸 Español"]].map(([code,lbl])=>(
+          <button key={code} onClick={()=>onLang(code)} style={{flex:1,padding:"10px 6px",borderRadius:9,border:`2px solid ${lang===code?C.leaf:C.border}`,background:lang===code?C.leaf+"18":C.white,color:lang===code?C.leaf:C.muted,cursor:"pointer",fontWeight:700,fontSize:12,textAlign:"center"}}>{lbl}</button>
+        ))}
+      </div>
+    </Card>
+
+    <Card>
+      <SecH icon="ℹ️" title="Despre aplicație"/>
+      <div style={{fontSize:13,color:C.dark,lineHeight:1.8}}>
+        <img src={LOGO} alt="GRUPO SPIC" style={{height:50,objectFit:"contain",marginBottom:10,display:"block"}}/>
+        <strong>GRUPO SPIC S.R.L.</strong><br/>
+        <span style={{color:C.muted}}>CUI: 52449798 · J02/2025067111009</span><br/>
+        <span style={{color:C.muted}}>Slatina, Jud. Olt</span><br/>
+        <a href="tel:0773398832" style={{color:C.sky,fontWeight:700,textDecoration:"none"}}>📞 0773 398 832</a><br/>
+        <a href="mailto:grupospic.es@gmail.com" style={{color:C.sky,fontWeight:700,textDecoration:"none"}}>✉️ grupospic.es@gmail.com</a><br/>
+        <span style={{color:C.muted,fontSize:11}}>AgronoMix AI v2.0 · DJI Agriculture · XAG · Claude AI</span>
+      </div>
+    </Card>
+  </>;
+}
+
+// ── PARCELE LIBERE TAB ────────────────────────────────────────────────────
+function ParceleLibereTab({freeParcels,clients,onNew,onEdit,onDel,onAssign}){
+  return <>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div><h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>✈️ Parcele libere ({freeParcels.length})</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Verifică spațiu aerian fără client asociat</p></div>
+      <Btn onClick={onNew}>+ Parcelă</Btn>
+    </div>
+    <div style={{background:C.bluePale,border:`1px solid ${C.blue}33`,borderRadius:12,padding:"10px 14px",marginBottom:12,fontSize:12,color:C.blue}}>
+      💡 Adaugă parcela, verifică spațiul aerian ROMATSA/AACR, apoi atribuie unui client.
+    </div>
+    {freeParcels.length===0&&<Card style={{textAlign:"center",padding:"28px"}}><div style={{fontSize:40,marginBottom:10}}>✈️</div><div style={{fontWeight:700,color:C.muted,marginBottom:10}}>Nicio parcelă liberă</div><Btn onClick={onNew}>Adaugă prima parcelă</Btn></Card>}
+    {freeParcels.map(p=><Card key={p.id} style={{borderLeft:`4px solid ${p.airResult?C.ok:"#3F51B5"}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:15,color:C.soil,marginBottom:4}}>{p.name}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:6}}>
+            {p.area&&<Badge color={C.muted}>{p.area} ha</Badge>}
+            {p.crop&&<Badge color={C.leaf}>🌱 {p.crop}</Badge>}
+            {p.location&&<Badge color={C.muted}>📍 {p.location}</Badge>}
+            {p.airResult?<Badge color={C.ok}>✈️ Verificat</Badge>:<Badge color={"#3F51B5"}>✈️ Neverificat</Badge>}
+          </div>
+          {p.mapsUrl&&<a href={p.mapsUrl} target="_blank" rel="noreferrer" style={{fontSize:12,color:C.blue,fontWeight:700,textDecoration:"none"}}>🗺️ Maps</a>}
+        </div>
+        <div style={{display:"flex",gap:5,flexShrink:0}}>
+          <Btn small outline color={"#3F51B5"} onClick={()=>onEdit(p)}>✏️</Btn>
+          <Btn small color={C.leaf} onClick={()=>onAssign(p)}>👤</Btn>
+          <Btn small outline color={C.danger} onClick={()=>onDel(p.id)}>✕</Btn>
+        </div>
+      </div>
+      {p.airResult&&<div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`,fontSize:12,color:C.dark,lineHeight:1.6,maxHeight:100,overflowY:"auto"}}>
+        {p.airResult.split("\n").filter(l=>l.trim()).slice(0,5).map((line,i)=>{
+          const t=line.trim();
+          if(/^🟢/.test(t))return <div key={i} style={{color:C.ok,fontWeight:700}}>{t}</div>;
+          if(/^🟡/.test(t))return <div key={i} style={{color:C.amber,fontWeight:700}}>{t}</div>;
+          if(/^🔴/.test(t))return <div key={i} style={{color:C.danger,fontWeight:700}}>{t}</div>;
+          return <div key={i} style={{color:C.muted}}>{t}</div>;
+        })}
+      </div>}
+    </Card>)}
+  </>;
+}
+
+// ── CLIENTS TAB ───────────────────────────────────────────────────────────
+function ClientsTab({clients,treatments,openCId,setOpenCId,onNewClient,onEditClient,onDelClient,onNewParcel,onEditParcel,onDelParcel,onViewTreat,onNewTreat}){
+  return <>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div><h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>Clienți ({clients.length})</h2><p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Arhivă clienți, parcele și tratamente</p></div>
+      <Btn onClick={onNewClient}>+ Client nou</Btn>
+    </div>
+    {clients.length===0&&<Card style={{textAlign:"center",padding:"32px 20px"}}><div style={{fontSize:40,marginBottom:10}}>👥</div><div style={{fontWeight:700,color:C.muted,marginBottom:10}}>Niciun client încă</div><Btn onClick={onNewClient}>Adaugă primul client</Btn></Card>}
+    {clients.map(client=>{
+      const nrTrat=treatments.filter(t=>t.clientId===client.id).length;
+      const isOpen=openCId===client.id;
+      return <Card key={client.id} style={{borderColor:isOpen?C.leaf:C.border,borderWidth:isOpen?2:1}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{flex:1,cursor:"pointer"}} onClick={()=>setOpenCId(isOpen?null:client.id)}>
+            <div style={{fontWeight:800,fontSize:15,color:C.soil,marginBottom:4}}>{client.name}{client.cui&&<span style={{fontSize:11,color:C.muted,fontWeight:400,marginLeft:8}}>CUI: {client.cui}</span>}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {client.phone&&<Badge color={C.sky}>📞 {client.phone}</Badge>}
+              {client.village&&<Badge color={C.muted}>📍 {client.village}{client.county?", "+client.county:""}</Badge>}
+              <Badge color={C.leaf}>🗺️ {client.parcels.length} parcele</Badge>
+              <Badge color={C.amber}>🧪 {nrTrat} trat.</Badge>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:5,marginLeft:8,flexShrink:0}}>
+            <Btn small outline color={C.amber} onClick={e=>{e.stopPropagation();onEditClient(client);}}>✏️</Btn>
+            <Btn small outline color={C.leaf} onClick={()=>setOpenCId(isOpen?null:client.id)}>{isOpen?"▲":"▼"}</Btn>
+            <Btn small outline color={C.danger} onClick={()=>onDelClient(client.id)}>✕</Btn>
+          </div>
+        </div>
+        {isOpen&&<div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${C.border}`}}>
+          {(client.phone||client.email||client.mapsUrl)&&<div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:10}}>
+            {client.phone&&<a href={"tel:"+client.phone} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 12px",background:C.ok+"18",border:`1.5px solid ${C.ok}44`,borderRadius:18,color:C.ok,fontWeight:700,fontSize:12,textDecoration:"none"}}>📞 Sună</a>}
+            {client.email&&<a href={"mailto:"+client.email} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 12px",background:C.sky+"18",border:`1.5px solid ${C.sky}44`,borderRadius:18,color:C.sky,fontWeight:700,fontSize:12,textDecoration:"none"}}>✉️ Email</a>}
+            {client.mapsUrl&&<a href={client.mapsUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:5,padding:"6px 12px",background:C.blue+"18",border:`1.5px solid ${C.blue}44`,borderRadius:18,color:C.blue,fontWeight:700,fontSize:12,textDecoration:"none"}}>🗺️ Maps</a>}
+          </div>}
+          {client.notes&&<div style={{background:C.panel,borderRadius:8,padding:"8px 12px",fontSize:13,color:C.muted,marginBottom:10}}>📝 {client.notes}</div>}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:12,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:.5}}>Parcele</span>
+            <Btn small onClick={()=>onNewParcel(client.id)}>+ Parcelă</Btn>
+          </div>
+          {client.parcels.length===0&&<p style={{fontSize:13,color:C.muted,margin:"0 0 10px"}}>Nicio parcelă.</p>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
+            {client.parcels.map(p=><div key={p.id} style={{background:C.panel,borderRadius:10,padding:"9px 11px",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:13,color:C.soil}}>{p.name}</div>
+                <div style={{fontSize:12,color:C.muted}}>{p.area} ha{p.crop?" · "+p.crop:""}</div>
+                {p.location&&<div style={{fontSize:11,color:C.muted}}>📍 {p.location}</div>}
+                {p.mapsUrl&&<a href={p.mapsUrl} target="_blank" rel="noreferrer" style={{fontSize:11,color:C.blue}}>🗺️ Maps</a>}
+              </div>
+              <div style={{display:"flex",gap:3,flexShrink:0,marginLeft:4}}>
+                <button onClick={()=>onEditParcel({clientId:client.id,parcel:p})} style={{background:"none",border:"none",color:C.amber,cursor:"pointer",fontSize:14,padding:"2px"}}>✏️</button>
+                <button onClick={()=>onDelParcel(client.id,p.id)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:16,padding:"2px"}}>×</button>
+              </div>
+            </div>)}
+          </div>
+          <div style={{fontSize:12,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>Ultimele tratamente</div>
+          {treatments.filter(t=>t.clientId===client.id).slice(0,3).map(t=>(
+            <div key={t.id} onClick={()=>onViewTreat(t)} style={{background:C.panelDark,borderRadius:10,padding:"8px 11px",marginBottom:5,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div><span style={{fontWeight:700,fontSize:13,color:C.soil}}>{t.cropLabel}</span><span style={{fontSize:11,color:C.muted,marginLeft:8}}>{t.parcelName} · {t.date}</span></div>
+              <Badge color={C.leaf}>{t.products.length} prod.</Badge>
+            </div>
+          ))}
+          {nrTrat===0&&<p style={{fontSize:13,color:C.muted,margin:"0 0 8px"}}>Niciun tratament.</p>}
+          <div style={{marginTop:8}}><Btn onClick={()=>onNewTreat(client.id)} color={C.leaf}>🧪 Tratament nou</Btn></div>
+        </div>}
+      </Card>;
+    })}
+  </>;
+}
+
+
+// ── TREATMENT FORM ────────────────────────────────────────────────────────
+function TreatmentForm({tf,updTF,updProd,clients,tfParcels,fenofazeList,hasHerbicid,windNum,gustNum,setTf,blankTF,onNewClient,onRunAI,onSave,onOpenDB}){
+  const droneSpecs=DRONE_DB[tf.droneBrand]?.modele[tf.droneModel];
+  const brandModels=DRONE_DB[tf.droneBrand]?Object.keys(DRONE_DB[tf.droneBrand].modele):[];
+  const labelRef=useRef();
+  const [labelImgs,setLabelImgs]=useState([]);
+  const [scanLoad,setScanLoad]=useState(false);
+  const [scanRes,setScanRes]=useState("");
+  const [scanErr,setScanErr]=useState("");
+  let parsedScan=null;
+  if(scanRes){try{parsedScan=JSON.parse(scanRes);}catch{}}
+
+  async function handleFiles(e){
+    const files=Array.from(e.target.files).slice(0,6);
+    const loaded=await Promise.all(files.map(f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res({url:URL.createObjectURL(f),b64:r.result.split(",")[1],type:f.type});r.onerror=rej;r.readAsDataURL(f);})));
+    setLabelImgs(p=>[...p,...loaded].slice(0,6));setScanRes("");setScanErr("");
+  }
+
+  async function scanLabels(){
+    if(!labelImgs.length){setScanErr("Adaugă cel puțin o fotografie.");return;}
+    setScanLoad(true);setScanRes("");setScanErr("");
+    try{
+      const content=[...labelImgs.map(img=>({type:"image",source:{type:"base64",media_type:img.type,data:img.b64}})),
+        {type:"text",text:`Analizează etichetele produselor fitosanitare. Returnează DOAR array JSON:
+[{"nume":"denumire","sa":"substanță activă","tip":"fungicid|erbicid|insecticid|acaricid|foliar NPK|biostimulator|microelemente|reglator crestere|adjuvant|altul","doza_et":"doza etichetă","doza_drona":"doză adaptată dronă 10-15L/ha","culturi":"culturi omologate","pih":"zile","restrictii":"albine,derivă,temp","obs":"observații"}]`}];
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,system:"Expert fitosanitar. Returnezi DOAR JSON valid.",messages:[{role:"user",content}]})});
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error.message);
+      const txt=data.content.map(b=>b.text||"").join("").trim().replace(/^```json\n?/,"").replace(/^```\n?/,"").replace(/\n?```$/,"").trim();
+      try{JSON.parse(txt);setScanRes(txt);}catch{setScanRes(txt);}
+    }catch(e){setScanErr("Eroare: "+e.message);}
+    setScanLoad(false);
+  }
+
+  function addScanned(prod){
+    const unit=prod.doza_drona?.includes("kg")?"kg/ha":prod.doza_drona?.includes("mL")?"mL/ha":"L/ha";
+    const dose=(prod.doza_drona||"").replace(/[^0-9.,–\-]/g,"").trim()||"";
+    setTf(p=>({...p,products:[...p.products.filter(x=>x.name),{name:prod.nume||"",dose,unit,type:prod.tip||"fungicid"}]}));
+  }
+
+  const parcelLocation=tfParcels.find(p=>p.id===tf.parcelId)?.location||"";
+
+  return <>
+    <div style={{marginBottom:12}}><h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>🧪 Tratament nou</h2><p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>AI calculează toți parametrii optimi</p></div>
+
+    <Card style={{borderLeft:`4px solid ${DRONE_DB[tf.droneBrand]?.culoare||C.sky}`}}>
+      <SecH icon="🚁" title="Model dronă"/>
+      <FL label="Marcă"><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {Object.keys(DRONE_DB).map(brand=>{const b=DRONE_DB[brand];const active=tf.droneBrand===brand;
+          return <button key={brand} onClick={()=>{updTF("droneBrand",brand);updTF("droneModel",Object.keys(b.modele)[0]);}} style={{padding:"7px 14px",borderRadius:9,border:`2px solid ${active?b.culoare:C.border}`,background:active?b.culoare+"18":C.white,color:active?b.culoare:C.muted,cursor:"pointer",fontWeight:800,fontSize:13,display:"flex",alignItems:"center",gap:5}}>
+            <span style={{fontSize:16}}>{b.logo}</span>{b.label}
+          </button>;})}
+      </div></FL>
+      <FL label="Model"><div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+        {brandModels.map(m=>{const active=tf.droneModel===m;const col=DRONE_DB[tf.droneBrand]?.culoare||C.sky;
+          return <button key={m} onClick={()=>updTF("droneModel",m)} style={{padding:"6px 12px",borderRadius:8,border:`2px solid ${active?col:C.border}`,background:active?col+"18":C.white,color:active?col:C.dark,cursor:"pointer",fontWeight:700,fontSize:12}}>{m}</button>;})}
+      </div></FL>
+      {droneSpecs&&<div style={{background:(DRONE_DB[tf.droneBrand]?.culoare||C.sky)+"0D",borderRadius:10,padding:"9px 12px",marginTop:4}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:5}}>
+          <Badge color={C.sky}>🪣 {droneSpecs.rezervor}L{droneSpecs.solid?" / "+droneSpecs.vol_solid_max+"kg":""}</Badge>
+          <Badge color={C.leaf}>💧 {droneSpecs.vol_min}–{droneSpecs.vol_max}L/ha</Badge>
+          <Badge color={C.soil}>↔️ max {droneSpecs.latime_max}m</Badge>
+          <Badge color={C.amber}>💨 vânt {droneSpecs.vant_max}/rafale {droneSpecs.rafale_max}km/h</Badge>
+          <Badge color={C.warn}>⏱️ ~{droneSpecs.rezervor<=40?"10-12":"20-25"}min/zbor</Badge>
+          {droneSpecs.solid&&<Badge color={C.teal}>🌾 Solid ✓</Badge>}
+        </div>
+        <p style={{margin:0,fontSize:11,color:C.muted,fontStyle:"italic"}}>{droneSpecs.note}</p>
+      </div>}
+      {tf.droneModel==="Agras T50"&&<FL label="Configurație duze T50" hint="2=câmp · 4=viță/livadă">
+        <div style={{display:"flex",gap:8,marginTop:2}}>
+          {[["2","🌾 2 duze — Câmp"],["4","🍇 4 duze — Vie/Livadă"]].map(([val,lbl])=>(
+            <button key={val} onClick={()=>updTF("nrDuze",val)} style={{flex:1,padding:"9px 6px",borderRadius:9,border:`2px solid ${tf.nrDuze===val?C.blue:C.border}`,background:tf.nrDuze===val?C.blue+"18":C.white,color:tf.nrDuze===val?C.blue:C.dark,cursor:"pointer",fontWeight:700,fontSize:12,textAlign:"center"}}>{lbl}</button>
+          ))}
+        </div>
+      </FL>}
+    </Card>
+
+    <Card>
+      <SecH icon="👥" title="Client & Parcelă"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <FL label="Client"><select style={iSt()} value={tf.clientId} onChange={e=>{updTF("clientId",e.target.value);updTF("parcelId","");}}>
+          <option value="">— Selectează —</option>{clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+        </select></FL>
+        <FL label="Parcelă"><select style={iSt()} value={tf.parcelId} onChange={e=>updTF("parcelId",e.target.value)} disabled={!tf.clientId}>
+          <option value="">— Selectează —</option>{tfParcels.map(p=><option key={p.id} value={p.id}>{p.name} ({p.area}ha)</option>)}
+        </select></FL>
+      </div>
+      <FL label="Data"><input type="date" style={iSt({width:"auto"})} value={tf.date} onChange={e=>updTF("date",e.target.value)}/></FL>
+      {clients.length===0&&<div style={{background:C.bluePale,borderRadius:8,padding:"9px 12px",fontSize:13,color:C.blue}}>ℹ️ <span style={{fontWeight:700,cursor:"pointer",textDecoration:"underline"}} onClick={onNewClient}>Adaugă primul client →</span></div>}
+    </Card>
+
+    <Card>
+      <SecH icon="🌱" title="Cultură & Fenofază"/>
+      <FL label="Cultură"><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{CROPS.map(c=><Chip key={c.id} active={tf.crop===c.id} onClick={()=>{updTF("crop",c.id);updTF("fenofaza","");}}>{c.icon} {c.label}</Chip>)}</div></FL>
+      {tf.crop==="alt"&&<FL label="Specificați"><input style={iSt()} value={tf.altaCult} onChange={e=>updTF("altaCult",e.target.value)} placeholder="ex: Triticale..."/></FL>}
+      {tf.crop&&<>
+        <FL label="Fenofaza"><select style={iSt()} value={tf.fenofaza} onChange={e=>updTF("fenofaza",e.target.value)}><option value="">— Selectează —</option>{fenofazeList.map(f=><option key={f} value={f}>{f}</option>)}</select></FL>
+        <FL label="Înălțimea plantei (cm)"><input type="number" min={1} max={400} style={iSt({width:120})} value={tf.inaltime} onChange={e=>updTF("inaltime",e.target.value)} placeholder="ex: 60"/></FL>
+      </>}
+    </Card>
+
+    <Card>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:10,borderBottom:`1px solid ${C.border}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>🧪</span><span style={{fontWeight:800,fontSize:14,color:C.soil,textTransform:"uppercase"}}>Produse</span></div>
+        <div style={{display:"flex",gap:5}}>
+          <button onClick={()=>labelRef.current.click()} style={{padding:"5px 10px",background:C.purple+"18",border:`1.5px solid ${C.purple}44`,borderRadius:7,color:C.purple,fontSize:11,fontWeight:700,cursor:"pointer"}}>📷 Scan</button>
+          <button onClick={onOpenDB} style={{padding:"5px 10px",background:C.teal+"18",border:`1.5px solid ${C.teal}44`,borderRadius:7,color:C.teal,fontSize:11,fontWeight:700,cursor:"pointer"}}>🌿 DB</button>
+        </div>
+      </div>
+      <input ref={labelRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFiles}/>
+      {(labelImgs.length>0||scanLoad||scanRes||scanErr)&&<div style={{background:C.purple+"0D",border:`1.5px solid ${C.purple}33`,borderRadius:11,padding:"11px",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <span style={{fontWeight:700,fontSize:12,color:C.purple}}>📷 Scanare etichete</span>
+          <span style={{fontSize:10,color:C.muted}}>max 6 foto</span>
+        </div>
+        {labelImgs.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:9}}>
+          {labelImgs.map((img,i)=><div key={i} style={{position:"relative"}}><img src={img.url} alt="" style={{width:70,height:52,objectFit:"cover",borderRadius:7,border:`2px solid ${C.purple}44`}}/><button onClick={()=>{setLabelImgs(p=>p.filter((_,j)=>j!==i));setScanRes("");}} style={{position:"absolute",top:-5,right:-5,background:C.danger,border:"none",borderRadius:"50%",width:16,height:16,color:"#fff",fontSize:9,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button></div>)}
+          <button onClick={()=>labelRef.current.click()} style={{width:70,height:52,borderRadius:7,border:`2px dashed ${C.purple}55`,background:"transparent",color:C.purple,cursor:"pointer",fontSize:18}}>+</button>
+        </div>}
+        {labelImgs.length>0&&!parsedScan&&<button onClick={scanLabels} disabled={scanLoad} style={{width:"100%",padding:"8px",border:"none",borderRadius:8,cursor:scanLoad?"not-allowed":"pointer",background:scanLoad?C.muted:C.purple,color:"#fff",fontSize:12,fontWeight:800}}>{scanLoad?"⏳ Citesc...":"🔍 Scanează și extrage"}</button>}
+        {scanErr&&<div style={{background:C.danger+"15",borderRadius:8,padding:"7px",fontSize:12,color:C.danger,fontWeight:600,marginTop:6}}>{scanErr}</div>}
+        {parsedScan&&Array.isArray(parsedScan)&&parsedScan.map((prod,i)=><div key={i} style={{background:C.white,borderRadius:9,padding:"10px",marginTop:7,border:`1px solid ${C.purple}33`}}>
+          <div style={{display:"flex",justifyContent:"space-between",gap:7,marginBottom:5}}>
+            <div><div style={{fontWeight:800,fontSize:13,color:C.soil}}>{prod.nume}</div><div style={{fontSize:11,color:C.muted}}>{prod.sa}</div></div>
+            <button onClick={()=>addScanned(prod)} style={{flexShrink:0,padding:"5px 10px",background:C.leaf,border:"none",borderRadius:7,color:"#fff",fontWeight:800,fontSize:11,cursor:"pointer"}}>+ Add</button>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,fontSize:11}}>
+            {prod.tip&&<Badge color={C.muted}>{prod.tip}</Badge>}
+            {prod.doza_drona&&<Badge color={C.leaf}>🚁 {prod.doza_drona}</Badge>}
+            {prod.pih&&prod.pih!=="neclar"&&<Badge color={C.muted}>⏱️ PIH {prod.pih}z</Badge>}
+          </div>
+          {prod.restrictii&&prod.restrictii!=="neclar"&&<div style={{marginTop:4,fontSize:11,color:C.warn,fontWeight:600}}>⚠️ {prod.restrictii}</div>}
+        </div>)}
+        {parsedScan&&<button onClick={()=>{setScanRes("");setLabelImgs([]);}} style={{marginTop:7,padding:"4px 11px",background:"none",border:`1px solid ${C.muted}`,borderRadius:7,color:C.muted,fontSize:11,cursor:"pointer"}}>🗑️ Șterge</button>}
+      </div>}
+      {hasHerbicid&&<div style={{background:C.danger+"15",border:`1.5px solid ${C.danger}55`,borderRadius:9,padding:"9px 12px",marginBottom:10,fontSize:12,color:C.danger,fontWeight:600}}>🚨 Erbicid — AI include avertizare derivă vecini.</div>}
+      {tf.products.filter(p=>p.name).length>=2&&<div style={{background:C.amber+"15",border:`1.5px solid ${C.amber}55`,borderRadius:9,padding:"9px 12px",marginBottom:10,fontSize:12,color:C.amber,fontWeight:600}}>🔬 {tf.products.filter(p=>p.name).length} produse — AI analizează compatibilitate + ordine preparare.</div>}
+      {tf.products.map((p,i)=><div key={i} style={{background:C.panel,borderRadius:9,padding:"10px 12px",marginBottom:8}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <span style={{fontSize:11,fontWeight:800,color:C.muted}}>PRODUS {i+1}</span>
+          {tf.products.length>1&&<button onClick={()=>setTf(p=>({...p,products:p.products.filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:17,padding:0}}>×</button>}
+        </div>
+        <FL label="Denumire"><input style={iSt()} value={p.name} onChange={e=>updProd(i,"name",e.target.value)} placeholder="ex: Amistar Opti..."/></FL>
+        <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+          <div style={{flex:"0 0 110px"}}><FL label="Doză"><input style={iSt()} value={p.dose} onChange={e=>updProd(i,"dose",e.target.value)} placeholder="0.0"/></FL></div>
+          <div style={{flex:"0 0 95px"}}><FL label="U.M."><select style={iSt()} value={p.unit} onChange={e=>updProd(i,"unit",e.target.value)}>{["L/ha","kg/ha","mL/ha","g/ha","mL/100L"].map(u=><option key={u}>{u}</option>)}</select></FL></div>
+          <div style={{flex:1,minWidth:180}}><FL label="Tip"><div style={{display:"flex",flexWrap:"wrap",gap:4}}>{PROD_TIPURI.map(t=><Chip key={t} small active={p.type===t} color={C.amber} onClick={()=>updProd(i,"type",t)}>{t}</Chip>)}</div></FL></div>
+        </div>
+      </div>)}
+      <Btn small color={C.soil} onClick={()=>setTf(p=>({...p,products:[...p.products,{name:"",dose:"",unit:"L/ha",type:"fungicid"}]}))}>+ Produs</Btn>
+      <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.border}`}}>
+        <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:13,fontWeight:700,color:C.soil}}>
+          <input type="checkbox" checked={tf.adjuvant} onChange={e=>updTF("adjuvant",e.target.checked)} style={{width:14,height:14}}/>Adjuvant
+        </label>
+        {tf.adjuvant&&<div style={{display:"flex",gap:9,marginTop:8,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:150}}><FL label="Denumire"><input style={iSt()} value={tf.adjName} onChange={e=>updTF("adjName",e.target.value)} placeholder="ex: Silwet Gold..."/></FL></div>
+          <div style={{flex:"0 0 120px"}}><FL label="Doză (mL/100L)"><input type="number" style={iSt()} value={tf.adjDose} onChange={e=>updTF("adjDose",e.target.value)} placeholder="ex: 50"/></FL></div>
+        </div>}
+      </div>
+    </Card>
+
+    <Card>
+      <SecH icon="🌤️" title="Condiții meteo"/>
+      <MeteoWidget location={parcelLocation} onMeteo={m=>{updTF("temp",m.temp);updTF("wind",m.wind);updTF("gust",m.gust);updTF("humid",m.humid);}}/>
+      {windNum>0&&(()=>{
+        const ds2=DRONE_DB[tf.droneBrand]?.modele[tf.droneModel];
+        const rLim=ds2?.rafale_max||13;const wLim=ds2?.vant_max||10;const wOp=ds2?.vant_op||7;
+        if(gustNum>rLim)return <div style={{background:C.danger+"18",border:`1.5px solid ${C.danger}55`,borderRadius:9,padding:"9px 12px",fontSize:12,color:C.danger,fontWeight:700,marginBottom:10}}>❌ Rafale {gustNum}km/h — DEPĂȘIT limita {tf.droneModel} ({rLim}km/h)!</div>;
+        if(windNum>wLim)return <div style={{background:C.danger+"18",border:`1.5px solid ${C.danger}55`,borderRadius:9,padding:"9px 12px",fontSize:12,color:C.danger,fontWeight:700,marginBottom:10}}>❌ Vânt {windNum}km/h — DEPĂȘIT limita ({wLim}km/h)!</div>;
+        if(windNum>wOp)return <div style={{background:C.warn+"18",border:`1.5px solid ${C.warn}55`,borderRadius:9,padding:"8px 12px",fontSize:12,color:C.warn,fontWeight:600,marginBottom:10}}>⚠️ Vânt {windNum}km/h — Picătură mai grosieră.</div>;
+        return null;
+      })()}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+        <FL label="Temp (°C)"><input type="number" step=".5" style={iSt()} value={tf.temp} onChange={e=>updTF("temp",e.target.value)} placeholder="ex: 18"/></FL>
+        <FL label="Vânt (km/h)"><input type="number" step=".1" style={iSt({borderColor:windNum>(DRONE_DB[tf.droneBrand]?.modele[tf.droneModel]?.vant_max||10)?C.danger:windNum>5?C.warn:C.border})} value={tf.wind} onChange={e=>updTF("wind",e.target.value)} placeholder="ex: 5"/></FL>
+        <FL label="Rafale (km/h)"><input type="number" step=".1" style={iSt({borderColor:gustNum>(DRONE_DB[tf.droneBrand]?.modele[tf.droneModel]?.rafale_max||13)?C.danger:gustNum>5?C.warn:C.border})} value={tf.gust} onChange={e=>updTF("gust",e.target.value)} placeholder="ex: 8"/></FL>
+        <FL label="Umiditate (%)"><input type="number" min={1} max={100} style={iSt()} value={tf.humid} onChange={e=>updTF("humid",e.target.value)} placeholder="ex: 55"/></FL>
+        <FL label="pH apă"><input type="number" step=".1" min={1} max={14} style={iSt()} value={tf.ph} onChange={e=>updTF("ph",e.target.value)} placeholder="ex: 6.5"/></FL>
+      </div>
+      <FL label="Interval dorit" hint="AI evaluează și poate recomanda altul">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:2}}>
+          {INTERVALE_ZI.map(iv=><button key={iv.id} onClick={()=>updTF("interval",iv.id)} style={{padding:"10px 6px",borderRadius:9,border:`2px solid ${tf.interval===iv.id?C.leaf:C.border}`,background:tf.interval===iv.id?C.leaf+"22":C.white,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+            <span style={{fontSize:20}}>{iv.icon}</span>
+            <span style={{fontSize:12,fontWeight:800,color:tf.interval===iv.id?C.leaf:C.dark}}>{iv.label}</span>
+            <span style={{fontSize:10,color:C.muted}}>{iv.hint}</span>
+          </button>)}
+        </div>
+      </FL>
+    </Card>
+
+    <Card>
+      <SecH icon="📋" title="Tratamente anterioare"/>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:9}}>
+        {TRAT_PREV.map(t=><Chip key={t} small active={tf.prevTr.includes(t)} color={C.amber} onClick={()=>setTf(p=>({...p,prevTr:p.prevTr.includes(t)?p.prevTr.filter(x=>x!==t):[...p.prevTr,t]}))}>{tf.prevTr.includes(t)?"✓ ":""}{t}</Chip>)}
+      </div>
+      <FL label="Observații"><textarea style={{...iSt(),minHeight:50,resize:"vertical"}} value={tf.freeNote} onChange={e=>updTF("freeNote",e.target.value)} placeholder="Vecinătăți sensibile, rezistențe..."/></FL>
+    </Card>
+
+    <Card>
+      <SecH icon="📸" title="Fotografii cultură"/>
+      <p style={{fontSize:12,color:C.muted,marginBottom:10}}>Fotografiază cultura înainte/după tratament. Se salvează cu tratamentul.</p>
+      <PhotoPicker photos={tf.photos||[]} onChange={photos=>updTF("photos",photos)}/>
+    </Card>
+
+    {tf.aiError&&<div style={{background:C.danger+"18",border:`1px solid ${C.danger}55`,borderRadius:9,padding:"9px 12px",marginBottom:10,color:C.danger,fontSize:12,fontWeight:700}}>⚠️ {tf.aiError}</div>}
+    <button onClick={onRunAI} disabled={tf.aiLoading} style={{width:"100%",padding:"14px",border:"none",borderRadius:11,cursor:tf.aiLoading?"not-allowed":"pointer",background:tf.aiLoading?C.muted:`linear-gradient(135deg,${C.soil} 0%,${C.leafLight} 100%)`,color:"#fff",fontSize:15,fontWeight:900,marginBottom:12,boxShadow:tf.aiLoading?"none":`0 4px 16px ${C.leaf}55`}}>
+      {tf.aiLoading?"⏳  Calculez parametrii...":"🤖  Calculează parametrii AI"}
+    </button>
+    {tf.aiResult&&<Card style={{borderColor:C.leafLight,borderWidth:2}}>
+      <div style={{background:`linear-gradient(135deg,${C.soil}12,${C.leaf}12)`,borderRadius:9,padding:"10px 13px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div style={{fontWeight:900,fontSize:14,color:C.soil}}>🌿 Raport AI</div><div style={{fontSize:11,color:C.muted}}>{tf.date} · {CROPS.find(c=>c.id===tf.crop)?.label}</div></div>
+        <Badge color={C.purple}>{INTERVALE_ZI.find(x=>x.id===tf.interval)?.icon} {INTERVALE_ZI.find(x=>x.id===tf.interval)?.label}</Badge>
+      </div>
+      <AiResult text={tf.aiResult}/>
+      <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.border}`,display:"flex",gap:7,justifyContent:"flex-end"}}>
+        <Btn onClick={onSave} color={C.leaf}>💾 Salvează</Btn>
+        <Btn outline color={C.soil} onClick={()=>setTf(blankTF())}>🗑️ Reset</Btn>
+      </div>
+    </Card>}
+  </>;
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────
+function ClientModal({onSave,onClose,initial}){
+  const isEdit=!!initial;
+  const [d,setD]=useState({name:"",cui:"",phone:"",email:"",village:"",county:"",mapsUrl:"",notes:"",...(initial||{})});
+  const [csup]=useState(typeof navigator!=="undefined"&&"contacts" in navigator&&"ContactsManager" in window);
+  const [cload,setCload]=useState(false);
+  const upd=(f,v)=>setD(p=>({...p,[f]:v}));
+  const inp=iSt();
+  async function pickContact(){setCload(true);try{const cs=await navigator.contacts.select(["name","tel","email"],{multiple:false});if(cs?.length){const c=cs[0];if(c.name?.[0])upd("name",c.name[0]);if(c.tel?.[0])upd("phone",c.tel[0].replace(/\s/g,""));if(c.email?.[0])upd("email",c.email[0]);}}catch{}finally{setCload(false);}}
+  async function paste(f){try{const t=await navigator.clipboard.readText();if(t)upd(f,t.trim());}catch{}}
+  return <Modal title={isEdit?"✏️ Editează client":"➕ Client nou"} onClose={onClose}>
+    {csup&&!isEdit&&<div style={{background:C.leaf+"18",border:`1.5px solid ${C.leaf}44`,borderRadius:9,padding:"10px 13px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+      <div><div style={{fontWeight:700,fontSize:13,color:C.leaf}}>📲 Importă din Contacte</div><div style={{fontSize:11,color:C.muted}}>Completare automată</div></div>
+      <button onClick={pickContact} disabled={cload} style={{padding:"7px 14px",background:C.leaf,border:"none",borderRadius:7,color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer"}}>{cload?"⏳":"👤 Caută"}</button>
+    </div>}
+    {!csup&&!isEdit&&<div style={{background:C.bluePale,border:`1px solid ${C.blue}33`,borderRadius:9,padding:"9px 12px",marginBottom:12,fontSize:12,color:C.blue}}>💡 Copiază numărul din Contacte și lipește cu 📋</div>}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:2}}>
+      <FL label="Nume / Firmă *"><input style={inp} value={d.name} onChange={e=>upd("name",e.target.value)} placeholder="Ion Popescu" autoComplete="name"/></FL>
+      <FL label="CUI / CNP"><input style={inp} value={d.cui} onChange={e=>upd("cui",e.target.value)} placeholder="12345678" inputMode="numeric"/></FL>
+    </div>
+    <FL label="Telefon">
+      <div style={{display:"flex",gap:5}}>
+        <input type="tel" inputMode="tel" autoComplete="tel" style={{...inp,flex:1}} value={d.phone} onChange={e=>upd("phone",e.target.value)} placeholder="07xx xxx xxx"/>
+        <button onClick={()=>paste("phone")} style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.amber+"18",border:`1.5px solid ${C.amber}44`,color:C.amber,fontSize:15,cursor:"pointer",lineHeight:1}}>📋</button>
+        <a href="tel:" style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.panel,border:`1.5px solid ${C.border}`,color:C.muted,fontSize:15,lineHeight:1,textDecoration:"none",display:"flex",alignItems:"center"}}>📓</a>
+        {d.phone&&<a href={"tel:"+d.phone} style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.ok+"18",border:`1.5px solid ${C.ok}44`,color:C.ok,fontSize:15,lineHeight:1,textDecoration:"none",display:"flex",alignItems:"center"}}>📞</a>}
+      </div>
+    </FL>
+    <FL label="Email">
+      <div style={{display:"flex",gap:5}}>
+        <input type="email" autoComplete="email" style={{...inp,flex:1}} value={d.email} onChange={e=>upd("email",e.target.value)} placeholder="email@domeniu.ro"/>
+        <button onClick={()=>paste("email")} style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.amber+"18",border:`1.5px solid ${C.amber}44`,color:C.amber,fontSize:15,cursor:"pointer",lineHeight:1}}>📋</button>
+        {d.email&&<a href={"mailto:"+d.email} style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.sky+"18",border:`1.5px solid ${C.sky}44`,color:C.sky,fontSize:15,lineHeight:1,textDecoration:"none",display:"flex",alignItems:"center"}}>✉️</a>}
+      </div>
+    </FL>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <FL label="Localitate"><input style={inp} value={d.village} onChange={e=>upd("village",e.target.value)} placeholder="ex: Fundulea" autoComplete="address-level2"/></FL>
+      <FL label="Județ"><input style={inp} value={d.county} onChange={e=>upd("county",e.target.value)} placeholder="ex: Călărași" autoComplete="address-level1"/></FL>
+    </div>
+    <FL label="Locație Google Maps">
+      <div style={{display:"flex",gap:5}}>
+        <input style={{...inp,flex:1}} value={d.mapsUrl} onChange={e=>upd("mapsUrl",e.target.value)} placeholder="Lipește linkul Maps..."/>
+        <button onClick={()=>paste("mapsUrl")} style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.amber+"18",border:`1.5px solid ${C.amber}44`,color:C.amber,fontSize:15,cursor:"pointer",lineHeight:1}}>📋</button>
+        <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.blue+"18",border:`1.5px solid ${C.blue}44`,color:C.blue,fontSize:15,lineHeight:1,textDecoration:"none",display:"flex",alignItems:"center"}}>🗺️</a>
+      </div>
+      {d.mapsUrl&&<a href={d.mapsUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:5,padding:"4px 10px",background:C.blue+"18",border:`1.5px solid ${C.blue}44`,borderRadius:14,color:C.blue,fontSize:11,fontWeight:700,textDecoration:"none"}}>✅ Verifică →</a>}
+    </FL>
+    <FL label="Observații"><textarea style={{...inp,minHeight:45,resize:"vertical"}} value={d.notes} onChange={e=>upd("notes",e.target.value)} placeholder="Note..."/></FL>
+    <div style={{display:"flex",justifyContent:"flex-end",gap:7,marginTop:7}}>
+      <Btn outline color={C.muted} onClick={onClose}>Anulează</Btn>
+      <Btn color={C.leaf} onClick={()=>{if(!d.name.trim()){alert("Introdu numele.");return;}onSave(d);}}>{isEdit?"💾 Salvează":"✅ Adaugă"}</Btn>
+    </div>
+  </Modal>;
+}
+
+function ParcelModal({onSave,onClose,initial}){
+  const isEdit=!!initial;
+  const [d,setD]=useState({name:"",area:"",crop:"",location:"",mapsUrl:"",notes:"",...(initial||{})});
+  const [airLoad,setAirLoad]=useState(false);
+  const [airRes,setAirRes]=useState(initial?.airResult||null);
+  const upd=(f,v)=>setD(p=>({...p,[f]:v}));
+  const inp=iSt();
+  async function paste(f){try{const t=await navigator.clipboard.readText();if(t)upd(f,t.trim());}catch{}}
+
+  async function checkAir(){
+    const loc=d.location||d.name;
+    if(!loc.trim()){alert("Adaugă locația parcelei.");return;}
+    setAirLoad(true);setAirRes(null);
+    try{
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,
+          system:"Expert spațiu aerian România drone UAS. Răspunzi în română cu informații precise.",
+          messages:[{role:"user",content:`Parcelă agricolă: "${loc}". Dronă UAS A1/A3 agricolă sub 25kg.
+Răspunde STRUCTURAT:
+1. 🗺️ ZONĂ AERIANĂ — CTR/ATZ/zone R/D/P, parcuri, infrastructură, frontiere
+2. ⚠️ RISC: 🟢LIBER / 🟡VERIFICARE NECESARĂ / 🔴AUTORIZAȚIE OBLIGATORIE
+3. 📋 CERINȚE — categorie UAS, altitudine max, notificare ATC
+4. 🔗 CONTACTE: ROMATSA https://notam.romatsa.ro | AACR https://www.caa.ro autorizatii@caa.ro +40 21 208 3550 | DronePoint https://dronepoint.aacr.ro | militar smfa@mapn.ro
+5. 📝 PAȘI obligatorii înainte de zbor`}]})});
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error.message);
+      setAirRes(data.content.map(b=>b.text||"").join(""));
+    }catch(e){setAirRes("❌ Eroare: "+e.message);}
+    setAirLoad(false);
+  }
+
+  const renderAir=(text)=>text.split("\n").map((line,i)=>{
+    const t=line.trim();if(!t)return <div key={i} style={{height:4}}/>;
+    if(/^[1-5]\.\s*[🗺️⚠️📋🔗📝]/.test(t)||/^[🗺️⚠️📋🔗📝][^\n]{0,80}$/.test(t))return <div key={i} style={{marginTop:10,marginBottom:3,fontWeight:800,fontSize:12,color:"#283593",borderLeft:"3px solid #3F51B5",paddingLeft:8}}>{t}</div>;
+    if(/^🟢/.test(t))return <div key={i} style={{background:C.ok+"15",border:`1px solid ${C.ok}44`,borderRadius:7,padding:"5px 10px",margin:"3px 0",fontSize:12,color:C.ok,fontWeight:700}}>{t}</div>;
+    if(/^🟡/.test(t))return <div key={i} style={{background:C.amber+"15",border:`1px solid ${C.amber}44`,borderRadius:7,padding:"5px 10px",margin:"3px 0",fontSize:12,color:C.amber,fontWeight:700}}>{t}</div>;
+    if(/^🔴/.test(t))return <div key={i} style={{background:C.danger+"15",border:`1px solid ${C.danger}44`,borderRadius:7,padding:"5px 10px",margin:"3px 0",fontSize:12,color:C.danger,fontWeight:700}}>{t}</div>;
+    if(t.includes("https://")){const parts=t.split(/(https?:\/\/[^\s)]+)/g);return <div key={i} style={{fontSize:12,color:C.dark,lineHeight:1.8}}>{parts.map((p,j)=>p.startsWith("http")?<a key={j} href={p} target="_blank" rel="noreferrer" style={{color:"#3F51B5",fontWeight:700}}>{p}</a>:p)}</div>;}
+    const em=t.match(/[\w.+-]+@[\w-]+\.[\w.]+/);
+    if(em){const pts=t.split(em[0]);return <div key={i} style={{fontSize:12,color:C.dark,lineHeight:1.8}}>{pts[0]}<a href={"mailto:"+em[0]} style={{color:"#3F51B5",fontWeight:700}}>{em[0]}</a>{pts[1]}</div>;}
+    const ph=t.match(/\+40[\s\d]{9,14}/);
+    if(ph){const pts=t.split(ph[0]);return <div key={i} style={{fontSize:12,color:C.dark,lineHeight:1.8}}>{pts[0]}<a href={"tel:"+ph[0].replace(/\s/g,"")} style={{color:C.ok,fontWeight:700}}>{ph[0]}</a>{pts[1]}</div>;}
+    if(/^[•\-]/.test(t))return <div key={i} style={{display:"flex",gap:6,fontSize:12,color:C.dark,lineHeight:1.7,paddingLeft:4}}><span style={{color:"#3F51B5",flexShrink:0}}>▸</span><span>{t.slice(1).trim()}</span></div>;
+    return <div key={i} style={{fontSize:12,color:C.dark,lineHeight:1.8}}>{t}</div>;
+  });
+
+  return <Modal title={isEdit?"✏️ Editează parcela":"🗺️ Parcelă nouă"} onClose={onClose}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <FL label="Denumire *"><input style={inp} value={d.name} onChange={e=>upd("name",e.target.value)} placeholder="ex: Câmpul Nord"/></FL>
+      <FL label="Suprafață (ha)"><input type="number" step=".1" min={.1} style={inp} value={d.area} onChange={e=>upd("area",e.target.value)} placeholder="ex: 12.5"/></FL>
+      <FL label="Cultura actuală"><input style={inp} value={d.crop} onChange={e=>upd("crop",e.target.value)} placeholder="ex: Grâu"/></FL>
+      <FL label="Localitate / Reper"><input style={inp} value={d.location} onChange={e=>upd("location",e.target.value)} placeholder="ex: Fundulea, km 3"/></FL>
+    </div>
+    <FL label="Google Maps">
+      <div style={{display:"flex",gap:5}}>
+        <input style={{...inp,flex:1}} value={d.mapsUrl} onChange={e=>upd("mapsUrl",e.target.value)} placeholder="Lipește linkul Maps..."/>
+        <button onClick={()=>paste("mapsUrl")} style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.amber+"18",border:`1.5px solid ${C.amber}44`,color:C.amber,fontSize:15,cursor:"pointer",lineHeight:1}}>📋</button>
+        <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{flexShrink:0,padding:"9px 10px",borderRadius:7,background:C.blue+"18",border:`1.5px solid ${C.blue}44`,color:C.blue,fontSize:15,lineHeight:1,textDecoration:"none",display:"flex",alignItems:"center"}}>🗺️</a>
+      </div>
+      {d.mapsUrl&&<a href={d.mapsUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:5,padding:"4px 10px",background:C.blue+"18",border:`1.5px solid ${C.blue}44`,borderRadius:14,color:C.blue,fontSize:11,fontWeight:700,textDecoration:"none"}}>✅ Verifică →</a>}
+    </FL>
+
+    <div style={{background:"#EEF0FB",border:"1.5px solid #3F51B566",borderRadius:11,padding:"12px",marginBottom:10}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:7}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <span style={{fontSize:20}}>✈️</span>
+          <div><div style={{fontWeight:800,fontSize:12,color:"#283593"}}>Verificare spațiu aerian</div><div style={{fontSize:10,color:C.muted}}>ROMATSA · AACR · EU drone</div></div>
+        </div>
+        <button onClick={checkAir} disabled={airLoad} style={{padding:"7px 12px",background:airLoad?"#9E9E9E":"#3F51B5",border:"none",borderRadius:7,color:"#fff",fontWeight:800,fontSize:11,cursor:airLoad?"not-allowed":"pointer"}}>
+          {airLoad?"⏳...":"✈️ Verifică"}
+        </button>
+      </div>
+      {airRes&&<div style={{marginTop:10,paddingTop:8,borderTop:"1px solid #C5CAE9"}}>
+        {renderAir(airRes)}
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:9,paddingTop:8,borderTop:"1px solid #C5CAE9"}}>
+          <a href="https://notam.romatsa.ro" target="_blank" rel="noreferrer" style={{fontSize:10,color:"#3F51B5",fontWeight:700,textDecoration:"none",padding:"3px 8px",background:"#3F51B511",border:"1px solid #3F51B533",borderRadius:10}}>✈️ NOTAM</a>
+          <a href="https://dronepoint.aacr.ro" target="_blank" rel="noreferrer" style={{fontSize:10,color:"#3F51B5",fontWeight:700,textDecoration:"none",padding:"3px 8px",background:"#3F51B511",border:"1px solid #3F51B533",borderRadius:10}}>📋 DronePoint</a>
+          <a href="mailto:autorizatii@caa.ro" style={{fontSize:10,color:C.ok,fontWeight:700,textDecoration:"none",padding:"3px 8px",background:C.ok+"11",border:`1px solid ${C.ok}33`,borderRadius:10}}>✉️ AACR</a>
+          <a href="tel:+40212083550" style={{fontSize:10,color:C.sky,fontWeight:700,textDecoration:"none",padding:"3px 8px",background:C.sky+"11",border:`1px solid ${C.sky}33`,borderRadius:10}}>📞 AACR</a>
+        </div>
+      </div>}
+    </div>
+
+    <FL label="Observații"><textarea style={{...inp,minHeight:45,resize:"vertical"}} value={d.notes} onChange={e=>upd("notes",e.target.value)} placeholder="Tip sol, vecinătăți sensibile, albine..."/></FL>
+    <div style={{display:"flex",justifyContent:"flex-end",gap:7,marginTop:7}}>
+      <Btn outline color={C.muted} onClick={onClose}>Anulează</Btn>
+      <Btn color={C.leaf} onClick={()=>{if(!d.name.trim()){alert("Introdu denumirea.");return;}onSave({...d,airResult:airRes});}}>{isEdit?"💾 Salvează":"✅ Adaugă"}</Btn>
+    </div>
+  </Modal>;
+}
+
+function TreatModal({t,onClose,onDelete}){
+  return <Modal title={"🧪 "+t.clientName+" — "+t.date} onClose={onClose}>
+    <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+      <Badge color={C.sky}>📅 {t.date}</Badge>
+      <Badge color={C.muted}>{t.parcelName}{t.parcelArea?" · "+t.parcelArea+" ha":""}</Badge>
+      <Badge color={C.leaf}>{CROPS.find(c=>c.id===t.crop)?.icon} {t.cropLabel}</Badge>
+      {t.fenofaza&&<Badge color={C.amber}>{t.fenofaza}</Badge>}
+      {t.interval&&<Badge color={C.purple}>{INTERVALE_ZI.find(x=>x.id===t.interval)?.icon} {INTERVALE_ZI.find(x=>x.id===t.interval)?.label}</Badge>}
+    </div>
+    {/* Fotografii cultură */}
+    {t.photos?.length>0&&<div style={{marginBottom:12}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:6}}>📸 Fotografii cultură ({t.photos.length})</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+        {t.photos.map((p,i)=>(
+          <a key={i} href={p.url} target="_blank" rel="noreferrer">
+            <img src={p.url} alt="" style={{width:90,height:68,objectFit:"cover",borderRadius:8,border:`2px solid ${C.leaf}44`,cursor:"pointer"}}/>
+          </a>
+        ))}
+      </div>
+    </div>}
+    <div style={{marginBottom:10}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:5}}>Produse aplicate</div>
+      {t.products.map((p,i)=><div key={i} style={{background:C.panel,borderRadius:7,padding:"6px 10px",marginBottom:4,fontSize:13}}><strong style={{color:C.soil}}>{p.name}</strong> — {p.dose} {p.unit} · <span style={{color:C.muted}}>{p.type}</span></div>)}
+      {t.adjuvant&&<div style={{background:C.panel,borderRadius:7,padding:"6px 10px",fontSize:12,color:C.muted}}>Adjuvant: {t.adjName} {t.adjDose} mL/100L</div>}
+    </div>
+    <div style={{background:C.panel,borderRadius:9,padding:"9px 11px",marginBottom:10,display:"flex",flexWrap:"wrap",gap:9,fontSize:13}}>
+      {t.temp&&<span>🌡️ <strong>{t.temp}°C</strong></span>}
+      {t.wind&&<span>💨 <strong>{t.wind}km/h</strong></span>}
+      {t.gust&&<span>🌬️ <strong>{t.gust}km/h</strong></span>}
+      {t.humid&&<span>💧 <strong>{t.humid}%</strong></span>}
+      {t.ph&&<span>pH <strong>{t.ph}</strong></span>}
+    </div>
+    <PihBadge products={t.products} date={t.date}/>
+    {t.aiResult&&<div style={{background:C.panelDark,borderRadius:9,padding:"11px 13px",marginBottom:10,maxHeight:320,overflowY:"auto",marginTop:8}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:7}}>Raport AI</div>
+      <AiResult text={t.aiResult}/>
+    </div>}
+    <div style={{display:"flex",justifyContent:"space-between",gap:7,flexWrap:"wrap"}}>
+      <Btn outline color={C.danger} onClick={onDelete}>🗑️ Șterge</Btn>
+      <div style={{display:"flex",gap:6}}>
+        <Btn outline color={C.sky} onClick={()=>shareReport(t)}>📱 Trimite</Btn>
+        <Btn outline color={C.purple} onClick={()=>generatePDF(t)}>📄 PDF</Btn>
+        <Btn color={C.leaf} onClick={onClose}>Închide</Btn>
+      </div>
+    </div>
+  </Modal>;
+}
+
+// ── PHOTO PICKER ──────────────────────────────────────────────────────────
+function PhotoPicker({photos,onChange}){
+  const fileRef=useRef();
+  async function handleFiles(e){
+    const files=Array.from(e.target.files).slice(0,8-photos.length);
+    const loaded=await Promise.all(files.map(f=>new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res({url:r.result,name:f.name,ts:Date.now()});
+      r.onerror=rej;r.readAsDataURL(f);
+    })));
+    onChange([...photos,...loaded]);
+  }
+  function remove(i){onChange(photos.filter((_,j)=>j!==i));}
+  return <div>
+    <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFiles}/>
+    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:photos.length<8?8:0}}>
+      {photos.map((p,i)=>(
+        <div key={i} style={{position:"relative",borderRadius:10,overflow:"hidden",border:`2px solid ${C.leaf}44`}}>
+          <img src={p.url} alt="" style={{width:85,height:64,objectFit:"cover",display:"block"}}/>
+          <button onClick={()=>remove(i)} style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,.6)",border:"none",borderRadius:"50%",width:18,height:18,color:"#fff",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>×</button>
+        </div>
+      ))}
+      {photos.length<8&&<button onClick={()=>fileRef.current.click()} style={{width:85,height:64,borderRadius:10,border:`2px dashed ${C.leaf}66`,background:C.panel,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,color:C.leaf}}>
+        <span style={{fontSize:22}}>📸</span>
+        <span style={{fontSize:9,fontWeight:700}}>Adaugă</span>
+      </button>}
+    </div>
+    {photos.length>0&&<p style={{fontSize:11,color:C.muted,marginTop:4}}>{photos.length}/8 fotografii</p>}
+  </div>;
+}
+
+// ── CALENDAR TAB ──────────────────────────────────────────────────────────
+function CalendarTab({treatments,onView}){
+  const today=new Date();
+  const [year,setYear]=useState(today.getFullYear());
+  const [month,setMonth]=useState(today.getMonth());
+
+  const firstDay=new Date(year,month,1).getDay(); // 0=Sun
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const startOffset=(firstDay+6)%7; // Mon=0
+
+  // Group treatments by date
+  const byDate={};
+  treatments.forEach(t=>{
+    const d=t.date;
+    if(!byDate[d])byDate[d]=[];
+    byDate[d].push(t);
+  });
+
+  function prevMonth(){if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1);}
+  function nextMonth(){if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1);}
+
+  const cells=[];
+  for(let i=0;i<startOffset;i++)cells.push(null);
+  for(let d=1;d<=daysInMonth;d++)cells.push(d);
+  while(cells.length%7!==0)cells.push(null);
+
+  const monthTreatments=treatments.filter(t=>{
+    const td=new Date(t.date);
+    return td.getFullYear()===year&&td.getMonth()===month;
+  });
+
+  return <>
+    <div style={{marginBottom:14}}>
+      <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>🗓️ Calendar tratamente</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>{monthTreatments.length} tratamente în {LUNI[month]} {year}</p>
+    </div>
+
+    <Card style={{padding:"14px"}}>
+      {/* Header nav */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+        <button onClick={prevMonth} style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:14,color:C.soil}}>‹</button>
+        <div style={{fontWeight:800,fontSize:16,color:C.soil}}>{LUNI[month]} {year}</div>
+        <button onClick={nextMonth} style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:14,color:C.soil}}>›</button>
+      </div>
+
+      {/* Day headers */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+        {["L","M","M","J","V","S","D"].map((d,i)=>(
+          <div key={i} style={{textAlign:"center",fontSize:11,fontWeight:700,color:i>=5?C.danger:C.muted,padding:"3px 0"}}>{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+        {cells.map((day,i)=>{
+          if(!day)return <div key={i}/>;
+          const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+          const dayTr=byDate[dateStr]||[];
+          const isToday=day===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();
+          const hasTr=dayTr.length>0;
+          const dow=((startOffset+day-1)%7);
+          const isWeekend=dow>=5;
+          return <div key={i} onClick={()=>hasTr&&onView(dayTr[0])} style={{
+            minHeight:44,borderRadius:8,padding:"4px 2px",textAlign:"center",cursor:hasTr?"pointer":"default",
+            background:isToday?C.leaf:hasTr?C.leaf+"22":C.white,
+            border:`1px solid ${isToday?C.leaf:hasTr?C.leaf+"55":C.border}`,
+            position:"relative",transition:"all .15s",
+          }}>
+            <div style={{fontSize:12,fontWeight:isToday?800:hasTr?700:400,color:isToday?"#fff":isWeekend?C.danger:C.dark}}>{day}</div>
+            {hasTr&&<div style={{marginTop:2,display:"flex",flexDirection:"column",gap:1,alignItems:"center"}}>
+              {dayTr.slice(0,2).map((t,j)=>(
+                <div key={j} style={{width:"80%",height:3,borderRadius:2,background:isToday?"rgba(255,255,255,.8)":C.leaf}}/>
+              ))}
+              {dayTr.length>2&&<div style={{fontSize:8,color:isToday?"rgba(255,255,255,.8)":C.leaf,fontWeight:700}}>+{dayTr.length-2}</div>}
+            </div>}
+          </div>;
+        })}
+      </div>
+    </Card>
+
+    {/* Treatments this month */}
+    {monthTreatments.length>0&&<>
+      <h3 style={{fontSize:14,fontWeight:700,color:C.soil,margin:"14px 0 8px"}}>Tratamente în {LUNI[month]}:</h3>
+      {monthTreatments.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>(
+        <Card key={t.id} style={{cursor:"pointer",padding:"12px 14px"}} onClick={()=>onView(t)}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:C.leaf,borderRadius:8,padding:"6px 8px",color:"#fff",fontWeight:800,fontSize:13,flexShrink:0,minWidth:32,textAlign:"center"}}>
+              {new Date(t.date).getDate()}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:13,color:C.soil}}>{t.clientName}</div>
+              <div style={{fontSize:12,color:C.muted}}>{CROPS.find(c=>c.id===t.crop)?.icon} {t.cropLabel} · {t.parcelName}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:3}}>
+                {t.products.slice(0,2).map((p,i)=><Badge key={i} color={C.muted}>{p.name}</Badge>)}
+                {t.products.length>2&&<Badge color={C.muted}>+{t.products.length-2}</Badge>}
+              </div>
+            </div>
+            {t.photos?.length>0&&<div style={{flexShrink:0}}>
+              <img src={t.photos[0].url} alt="" style={{width:44,height:34,objectFit:"cover",borderRadius:6,border:`1px solid ${C.border}`}}/>
+            </div>}
+          </div>
+          <PihBadge products={t.products} date={t.date}/>
+        </Card>
+      ))}
+    </>}
+
+    {monthTreatments.length===0&&<div style={{textAlign:"center",padding:"28px",color:C.muted,fontSize:13}}>
+      Niciun tratament înregistrat în {LUNI[month]} {year}
+    </div>}
+  </>;
+}
+
+// ── PIH REMINDERS TAB ─────────────────────────────────────────────────────
+function PihTab({treatments,onView}){
+  const today=new Date();
+
+  const items=treatments.map(t=>{
+    const maxPih=Math.max(...t.products.map(p=>{
+      const db=PRODUSE_DB.find(x=>x.nume===p.name);
+      return db?.pih||0;
+    }));
+    if(!maxPih) return null;
+    const minRecoltare=new Date(new Date(t.date).getTime()+maxPih*86400000);
+    const daysLeft=Math.ceil((minRecoltare-today)/86400000);
+    return {...t,maxPih,minRecoltare,daysLeft};
+  }).filter(Boolean).sort((a,b)=>a.daysLeft-b.daysLeft);
+
+  const urgent=items.filter(x=>x.daysLeft>0&&x.daysLeft<=7);
+  const upcoming=items.filter(x=>x.daysLeft>7&&x.daysLeft<=30);
+  const safe=items.filter(x=>x.daysLeft>30);
+  const expired=items.filter(x=>x.daysLeft<=0);
+
+  function PIHCard({t,accent}){
+    return <Card style={{cursor:"pointer",borderLeft:`4px solid ${accent}`}} onClick={()=>onView(t)}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:14,color:C.soil,marginBottom:3}}>{t.clientName}</div>
+          <div style={{fontSize:12,color:C.muted,marginBottom:5}}>
+            {CROPS.find(c=>c.id===t.crop)?.icon} {t.cropLabel} · {t.parcelName}
+            {t.parcelArea?" · "+t.parcelArea+" ha":""}
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
+            <Badge color={C.sky}>📅 Tratat: {t.date}</Badge>
+            <Badge color={C.muted}>⏱️ PIH: {t.maxPih} zile</Badge>
+          </div>
+          <div style={{background:accent+"18",border:`1px solid ${accent}44`,borderRadius:8,padding:"6px 10px",fontSize:12,fontWeight:700,color:accent}}>
+            {t.daysLeft<=0
+              ?"✅ PIH expirat — recoltare permisă"
+              :`⏰ Recoltare permisă din ${t.minRecoltare.toLocaleDateString("ro-RO")} — ${t.daysLeft} zile`}
+          </div>
+        </div>
+        {t.photos?.length>0&&<img src={t.photos[0].url} alt="" style={{width:50,height:38,objectFit:"cover",borderRadius:6,flexShrink:0}}/>}
+      </div>
+    </Card>;
+  }
+
+  return <>
+    <div style={{marginBottom:14}}>
+      <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>⏰ Monitorizare PIH</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Perioade de interdicție înainte de recoltare</p>
+    </div>
+
+    {items.length===0&&<Card style={{textAlign:"center",padding:"28px"}}>
+      <div style={{fontSize:36,marginBottom:8}}>⏰</div>
+      <div style={{color:C.muted,fontWeight:700}}>Niciun tratament cu PIH activ</div>
+    </Card>}
+
+    {urgent.length>0&&<>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,marginTop:4}}>
+        <div style={{width:10,height:10,borderRadius:"50%",background:C.danger,flexShrink:0}}/>
+        <span style={{fontWeight:800,fontSize:13,color:C.danger}}>🚨 URGENT — Recoltare în mai puțin de 7 zile ({urgent.length})</span>
+      </div>
+      {urgent.map(t=><PIHCard key={t.id} t={t} accent={C.danger}/>)}
+    </>}
+
+    {upcoming.length>0&&<>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,marginTop:12}}>
+        <div style={{width:10,height:10,borderRadius:"50%",background:C.warn,flexShrink:0}}/>
+        <span style={{fontWeight:800,fontSize:13,color:C.warn}}>⚠️ În 7-30 de zile ({upcoming.length})</span>
+      </div>
+      {upcoming.map(t=><PIHCard key={t.id} t={t} accent={C.warn}/>)}
+    </>}
+
+    {safe.length>0&&<>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,marginTop:12}}>
+        <div style={{width:10,height:10,borderRadius:"50%",background:C.ok,flexShrink:0}}/>
+        <span style={{fontWeight:800,fontSize:13,color:C.ok}}>✅ Siguranță — Peste 30 de zile ({safe.length})</span>
+      </div>
+      {safe.map(t=><PIHCard key={t.id} t={t} accent={C.ok}/>)}
+    </>}
+
+    {expired.length>0&&<>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,marginTop:12}}>
+        <div style={{width:10,height:10,borderRadius:"50%",background:C.muted,flexShrink:0}}/>
+        <span style={{fontWeight:800,fontSize:13,color:C.muted}}>📋 PIH expirat — recoltare permisă ({expired.length})</span>
+      </div>
+      {expired.map(t=><PIHCard key={t.id} t={t} accent={C.muted}/>)}
+    </>}
+  </>;
+}
+
+// ── PDF EXPORT ─────────────────────────────────────────────────────────────
+function generatePDF(t){
+  const cropLabel=CROPS.find(c=>c.id===t.crop)?.label||t.cropLabel;
+  const intervalLabel=INTERVALE_ZI.find(x=>x.id===t.interval)?.label||"";
+  const maxPih=Math.max(...t.products.map(p=>{const db=PRODUSE_DB.find(x=>x.nume===p.name);return db?.pih||0;}));
+  const minRecoltare=maxPih?new Date(new Date(t.date).getTime()+maxPih*86400000).toLocaleDateString("ro-RO"):"—";
+
+  const html=`<!DOCTYPE html>
+<html lang="ro">
+<head><meta charset="UTF-8"/>
+<title>Raport Tratament — ${t.clientName}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Arial,sans-serif;font-size:12px;color:#1A2910;background:#fff;padding:20px;}
+  .header{background:linear-gradient(135deg,#1A3409,#2E7D1F);color:#fff;padding:16px 20px;border-radius:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+  .logo-area{font-size:22px;}
+  .company h1{font-size:17px;margin-bottom:2px;}
+  .company p{font-size:10px;opacity:.8;}
+  .title{font-size:13px;font-weight:bold;color:#1A3409;background:#ECF3E6;padding:8px 12px;border-radius:7px;margin-bottom:12px;border-left:4px solid #2E7D1F;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .box{background:#F3F0E8;border-radius:8px;padding:10px 12px;}
+  .box-label{font-size:10px;font-weight:bold;color:#6E8866;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  .box-val{font-size:13px;font-weight:bold;color:#1A3409;}
+  .products{margin-bottom:12px;}
+  .prod{background:#F3F0E8;border-radius:7px;padding:8px 12px;margin-bottom:5px;display:flex;justify-content:space-between;}
+  .prod-name{font-weight:bold;color:#1A3409;}
+  .prod-info{color:#6E8866;font-size:11px;}
+  .pih{background:#FFF8E1;border:1px solid #C0780044;border-radius:7px;padding:8px 12px;margin-bottom:12px;color:#C07800;font-weight:600;}
+  .ai-report{background:#F3F0E8;border-radius:8px;padding:12px;margin-bottom:12px;white-space:pre-wrap;font-size:11px;line-height:1.6;max-height:none;}
+  .footer{text-align:center;font-size:10px;color:#6E8866;border-top:1px solid #D6E8CA;padding-top:10px;margin-top:10px;}
+  @media print{body{padding:10px;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo-area">🚁</div>
+  <div class="company">
+    <h1>GRUPO SPIC S.R.L.</h1>
+    <p>CUI: 52449798 · Slatina, Jud. Olt · 0773 398 832 · grupospic.es@gmail.com</p>
+  </div>
+  <div style="text-align:right;font-size:10px;opacity:.8">AgronoMix AI<br/>Raport tratament</div>
+</div>
+
+<div class="title">📋 Raport de tratament — ${t.date}</div>
+
+<div class="grid">
+  <div class="box"><div class="box-label">Client</div><div class="box-val">${t.clientName}</div></div>
+  <div class="box"><div class="box-label">Parcelă</div><div class="box-val">${t.parcelName}${t.parcelArea?" · "+t.parcelArea+" ha":""}</div></div>
+  <div class="box"><div class="box-label">Cultură</div><div class="box-val">${cropLabel}</div></div>
+  <div class="box"><div class="box-label">Fenofază</div><div class="box-val">${t.fenofaza||"—"}</div></div>
+  <div class="box"><div class="box-label">Interval aplicare</div><div class="box-val">${intervalLabel}</div></div>
+  <div class="box"><div class="box-label">Dronă</div><div class="box-val">${t.droneBrand||"DJI"} ${t.droneModel||"Agras T50"}</div></div>
+</div>
+
+<div class="box" style="margin-bottom:12px">
+  <div class="box-label">Condiții meteo</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px">
+    ${t.temp?`<span>🌡️ <b>${t.temp}°C</b></span>`:""}
+    ${t.wind?`<span>💨 <b>${t.wind} km/h</b></span>`:""}
+    ${t.gust?`<span>🌬️ rafale <b>${t.gust} km/h</b></span>`:""}
+    ${t.humid?`<span>💧 <b>${t.humid}%</b></span>`:""}
+    ${t.ph?`<span>pH <b>${t.ph}</b></span>`:""}
+  </div>
+</div>
+
+<div class="products">
+  <div class="box-label" style="margin-bottom:6px">Produse aplicate</div>
+  ${t.products.map(p=>`<div class="prod"><span class="prod-name">${p.name}</span><span class="prod-info">${p.dose} ${p.unit} · ${p.type}</span></div>`).join("")}
+  ${t.adjuvant?`<div class="prod"><span class="prod-name">Adjuvant: ${t.adjName}</span><span class="prod-info">${t.adjDose} mL/100L</span></div>`:""}
+</div>
+
+${maxPih?`<div class="pih">⏰ Data minimă de recoltare: <b>${minRecoltare}</b> (PIH: ${maxPih} zile)</div>`:""}
+
+${t.aiResult?`<div class="box-label" style="margin-bottom:6px">Raport AI — parametri recomandați</div>
+<div class="ai-report">${t.aiResult.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>`:""}
+
+<div class="footer">
+  © ${new Date().getFullYear()} GRUPO SPIC S.R.L. · Toate drepturile rezervate · AgronoMix AI v2.0<br/>
+  Document generat la ${new Date().toLocaleString("ro-RO")}
+</div>
+</body></html>`;
+
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`Raport_${t.clientName}_${t.date}.html`.replace(/\s/g,"_");
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function shareReport(t){
+  const text=`🚁 GRUPO SPIC S.R.L. — Raport tratament\n📅 Data: ${t.date}\n👤 Client: ${t.clientName}\n🌱 Cultură: ${t.cropLabel}\n🗺️ Parcelă: ${t.parcelName}${t.parcelArea?" ("+t.parcelArea+" ha)":""}\n🧪 Produse: ${t.products.map(p=>p.name+" "+p.dose+p.unit).join(", ")}\n📋 Raport AI disponibil în AgronoMix AI\n\nGRUPO SPIC S.R.L. · 0773 398 832`;
+  if(navigator.share){navigator.share({title:"Raport tratament — GRUPO SPIC",text});}
+  else{navigator.clipboard.writeText(text).then(()=>alert("✅ Raport copiat în clipboard — lipește pe WhatsApp sau Email!"));}
+}
+
+// ── TARIFARE TAB ──────────────────────────────────────────────────────────
+function TarifareTab({clients,treatments}){
+  const [clientId,setClientId]=useState("");
+  const [parcele,setParcele]=useState([{name:"",ha:"",distanta:""}]);
+  const [pretHa,setPretHa]=useState("15");
+  const [pretKm,setPretKm]=useState("2");
+  const [manopera,setManopera]=useState("0");
+  const [tva,setTva]=useState(true);
+  const [oferta,setOferta]=useState(null);
+
+  const client=clients.find(c=>c.id===clientId);
+
+  // Auto-fill parcels from client
+  function loadClientParcels(){
+    if(!client)return;
+    setParcele(client.parcels.map(p=>({name:p.name,ha:p.area||"",distanta:""})));
+  }
+
+  function addParcel(){setParcele(p=>[...p,{name:"",ha:"",distanta:""}]);}
+  function updParcel(i,f,v){setParcele(p=>p.map((x,j)=>j===i?{...x,[f]:v}:x));}
+  function remParcel(i){setParcele(p=>p.filter((_,j)=>j!==i));}
+
+  function calculeaza(){
+    const pFilled=parcele.filter(p=>p.ha&&parseFloat(p.ha)>0);
+    if(!pFilled.length){alert("Adaugă cel puțin o parcelă cu suprafața.");return;}
+    const totalHa=pFilled.reduce((s,p)=>s+parseFloat(p.ha||0),0);
+    const maxDist=Math.max(...pFilled.map(p=>parseFloat(p.distanta||0)));
+    const costHa=totalHa*parseFloat(pretHa||0);
+    const costDrum=maxDist*2*parseFloat(pretKm||0); // dus-întors
+    const costManopera=parseFloat(manopera||0);
+    const subtotal=costHa+costDrum+costManopera;
+    const tvaSuma=tva?subtotal*0.21:0;
+    const total=subtotal+tvaSuma;
+    setOferta({pFilled,totalHa,costHa,costDrum,costManopera,subtotal,tvaSuma,total,maxDist,
+      pretHa:parseFloat(pretHa),pretKm:parseFloat(pretKm),date:new Date().toLocaleDateString("ro-RO")});
+  }
+
+  function exportOferta(){
+    if(!oferta)return;
+    const html=`<!DOCTYPE html><html lang="ro"><head><meta charset="UTF-8"/>
+<title>Ofertă — ${client?.name||"Client"}</title>
+<style>body{font-family:Arial,sans-serif;font-size:12px;color:#1A2910;padding:24px;max-width:700px;margin:0 auto;}
+.header{background:linear-gradient(135deg,#1A3409,#2E7D1F);color:#fff;padding:16px 20px;border-radius:10px;margin-bottom:20px;}
+.header h1{font-size:18px;margin-bottom:3px;}
+.header p{font-size:10px;opacity:.8;}
+table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+th{background:#ECF3E6;padding:8px 10px;text-align:left;font-size:11px;color:#6E8866;text-transform:uppercase;border-bottom:2px solid #D6E8CA;}
+td{padding:8px 10px;border-bottom:1px solid #ECF3E6;}
+.total-row{background:#ECF3E6;font-weight:bold;}
+.grand-total{background:#1A3409;color:#fff;font-size:14px;}
+.footer{text-align:center;font-size:10px;color:#6E8866;margin-top:20px;padding-top:10px;border-top:1px solid #D6E8CA;}
+</style></head><body>
+<div class="header"><h1>🚁 GRUPO SPIC S.R.L.</h1>
+<p>CUI: 52449798 · Slatina, Jud. Olt · 0773 398 832 · grupospic.es@gmail.com</p></div>
+<h2 style="margin-bottom:4px">OFERTĂ SERVICII TRATAMENTE DRONE</h2>
+<p style="color:#6E8866;margin-bottom:16px">Data: ${oferta.date} · Client: <b>${client?.name||"—"}</b></p>
+<table><thead><tr><th>Parcelă</th><th>Suprafață (ha)</th><th>Preț/ha (lei)</th><th>Total (lei)</th></tr></thead><tbody>
+${oferta.pFilled.map(p=>`<tr><td>${p.name||"Parcelă"}</td><td>${p.ha}</td><td>${oferta.pretHa}</td><td>${(parseFloat(p.ha)*oferta.pretHa).toFixed(2)}</td></tr>`).join("")}
+</tbody></table>
+<table><thead><tr><th>Element cost</th><th>Detalii</th><th>Valoare (lei)</th></tr></thead><tbody>
+<tr><td>Tratament aerian</td><td>${oferta.totalHa.toFixed(2)} ha × ${oferta.pretHa} lei/ha</td><td>${oferta.costHa.toFixed(2)}</td></tr>
+${oferta.costDrum>0?`<tr><td>Deplasare</td><td>${oferta.maxDist} km × 2 (dus-întors) × ${oferta.pretKm} lei/km</td><td>${oferta.costDrum.toFixed(2)}</td></tr>`:""}
+${oferta.costManopera>0?`<tr><td>Manoperă suplimentară</td><td>—</td><td>${oferta.costManopera.toFixed(2)}</td></tr>`:""}
+<tr class="total-row"><td colspan="2">Subtotal (fără TVA)</td><td>${oferta.subtotal.toFixed(2)}</td></tr>
+${tva?`<tr><td colspan="2">TVA 21%</td><td>${oferta.tvaSuma.toFixed(2)}</td></tr>`:""}
+<tr class="grand-total"><td colspan="2">TOTAL DE PLATĂ</td><td>${oferta.total.toFixed(2)} lei</td></tr>
+</tbody></table>
+<div class="footer">© ${new Date().getFullYear()} GRUPO SPIC S.R.L. · Ofertă valabilă 30 de zile · AgronoMix AI</div>
+</body></html>`;
+    const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=`Oferta_${client?.name||"Client"}_${oferta.date}.html`.replace(/\s/g,"_");
+    a.click();URL.revokeObjectURL(url);
+  }
+
+  const inp=iSt();
+  return <>
+    <div style={{marginBottom:14}}>
+      <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>💰 Modul tarifare</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Calculează costul și generează ofertă</p>
+    </div>
+
+    <Card>
+      <SecH icon="👥" title="Client"/>
+      <FL label="Selectează client">
+        <select style={inp} value={clientId} onChange={e=>setClientId(e.target.value)}>
+          <option value="">— Fără client / Client nou —</option>
+          {clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </FL>
+      {client?.parcels?.length>0&&<button onClick={loadClientParcels} style={{padding:"7px 14px",background:C.leaf+"18",border:`1.5px solid ${C.leaf}44`,borderRadius:8,color:C.leaf,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+        📋 Preia parcelele din fișa clientului
+      </button>}
+    </Card>
+
+    <Card>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:10,borderBottom:`1px solid ${C.border}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>🗺️</span><span style={{fontWeight:800,fontSize:14,color:C.soil,textTransform:"uppercase"}}>Parcele de tratat</span></div>
+        <Btn small onClick={addParcel}>+ Parcelă</Btn>
+      </div>
+      {parcele.map((p,i)=>(
+        <div key={i} style={{background:C.panel,borderRadius:9,padding:"10px 12px",marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+            <span style={{fontSize:11,fontWeight:700,color:C.muted}}>PARCELĂ {i+1}</span>
+            {parcele.length>1&&<button onClick={()=>remParcel(i)} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:17}}>×</button>}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+            <FL label="Denumire"><input style={inp} value={p.name} onChange={e=>updParcel(i,"name",e.target.value)} placeholder="ex: Nord"/></FL>
+            <FL label="Suprafață (ha)"><input type="number" step=".1" min={0} style={inp} value={p.ha} onChange={e=>updParcel(i,"ha",e.target.value)} placeholder="ex: 10"/></FL>
+            <FL label="Distanță (km)" hint="De la baza ta"><input type="number" step="1" min={0} style={inp} value={p.distanta} onChange={e=>updParcel(i,"distanta",e.target.value)} placeholder="ex: 25"/></FL>
+          </div>
+        </div>
+      ))}
+    </Card>
+
+    <Card>
+      <SecH icon="💲" title="Prețuri"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+        <FL label="Preț per hectar (lei)" hint="Tarif tratament aerian"><input type="number" step="1" style={inp} value={pretHa} onChange={e=>setPretHa(e.target.value)} placeholder="ex: 15"/></FL>
+        <FL label="Preț per km (lei)" hint="Cost deplasare dus-întors"><input type="number" step="0.5" style={inp} value={pretKm} onChange={e=>setPretKm(e.target.value)} placeholder="ex: 2"/></FL>
+        <FL label="Manoperă suplimentară (lei)" hint="Opțional"><input type="number" step="10" style={inp} value={manopera} onChange={e=>setManopera(e.target.value)} placeholder="0"/></FL>
+        <FL label="TVA">
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginTop:4,fontSize:13,fontWeight:700,color:C.soil}}>
+            <input type="checkbox" checked={tva} onChange={e=>setTva(e.target.checked)} style={{width:16,height:16}}/>
+            Include TVA 21%
+          </label>
+        </FL>
+      </div>
+    </Card>
+
+    <Btn style={{width:"100%",marginBottom:14}} onClick={calculeaza}>💰 Calculează oferta</Btn>
+
+    {oferta&&<Card style={{borderColor:C.leaf,borderWidth:2}}>
+      <SecH icon="📋" title="Ofertă calculată"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+        {[
+          ["🌾 Total hectare",oferta.totalHa.toFixed(2)+" ha"],
+          ["💰 Cost tratament",oferta.costHa.toFixed(2)+" lei"],
+          ["🚗 Cost deplasare",oferta.costDrum.toFixed(2)+" lei"],
+          ["🔧 Manoperă",oferta.costManopera.toFixed(2)+" lei"],
+          ["📊 Subtotal",oferta.subtotal.toFixed(2)+" lei"],
+          tva&&["🧾 TVA 21%",oferta.tvaSuma.toFixed(2)+" lei"],
+        ].filter(Boolean).map(([l,v],i)=>(
+          <div key={i} style={{background:C.panel,borderRadius:8,padding:"9px 11px"}}>
+            <div style={{fontSize:11,color:C.muted,fontWeight:600}}>{l}</div>
+            <div style={{fontSize:14,fontWeight:800,color:C.soil,marginTop:2}}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:`linear-gradient(135deg,${C.soil},${C.leaf})`,borderRadius:10,padding:"14px 16px",textAlign:"center",marginBottom:14}}>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.7)",marginBottom:3}}>TOTAL DE PLATĂ</div>
+        <div style={{fontSize:26,fontWeight:900,color:"#fff"}}>{oferta.total.toFixed(2)} lei</div>
+        {tva&&<div style={{fontSize:11,color:"rgba(255,255,255,.6)",marginTop:2}}>din care TVA: {oferta.tvaSuma.toFixed(2)} lei</div>}
+      </div>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end",flexWrap:"wrap"}}>
+        <Btn outline color={C.sky} onClick={()=>{const txt=`🚁 GRUPO SPIC S.R.L.\nOfertă tratamente drone\nClient: ${client?.name||"—"}\nSuprafață: ${oferta.totalHa.toFixed(2)} ha\nTOTAL: ${oferta.total.toFixed(2)} lei${tva?" (cu TVA 21%)":""}\n📞 0773 398 832`;navigator.share?navigator.share({title:"Ofertă GRUPO SPIC",text:txt}):navigator.clipboard.writeText(txt).then(()=>alert("✅ Copiat!"));}}>📱 Trimite</Btn>
+        <Btn color={C.leaf} onClick={exportOferta}>📄 Exportă ofertă</Btn>
+      </div>
+    </Card>}
+  </>;
+}
+
+
+// ── HARTA PARCELE (via Google Maps embed) ────────────────────────────────
+function HartaTab({clients,freeParcels}){
+  const [selClient,setSelClient]=useState("all");
+  const allParcels=[];
+  if(selClient==="all"){
+    clients.forEach(c=>c.parcels.forEach(p=>{if(p.mapsUrl)allParcels.push({...p,clientName:c.name,clientColor:C.leaf});}));
+    freeParcels.forEach(p=>{if(p.mapsUrl)allParcels.push({...p,clientName:"Liber",clientColor:C.sky});});
+  } else {
+    const c=clients.find(x=>x.id===selClient);
+    c?.parcels.forEach(p=>{if(p.mapsUrl)allParcels.push({...p,clientName:c.name,clientColor:C.leaf});});
+  }
+  const inp=iSt();
+  return <>
+    <div style={{marginBottom:14}}>
+      <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>🗺️ Hartă parcele</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Parcele cu locație Google Maps salvată</p>
+    </div>
+    <Card style={{padding:"12px 14px",marginBottom:12}}>
+      <FL label="Filtrează după client">
+        <select style={inp} value={selClient} onChange={e=>setSelClient(e.target.value)}>
+          <option value="all">Toți clienții</option>
+          {clients.map(c=><option key={c.id} value={c.id}>{c.name} ({c.parcels.filter(p=>p.mapsUrl).length} parcele cu Maps)</option>)}
+        </select>
+      </FL>
+    </Card>
+    {allParcels.length===0&&<Card style={{textAlign:"center",padding:"28px"}}>
+      <div style={{fontSize:36,marginBottom:8}}>🗺️</div>
+      <div style={{color:C.muted,fontWeight:700,marginBottom:8}}>Nicio parcelă cu locație Maps salvată</div>
+      <p style={{fontSize:12,color:C.muted}}>Adaugă linkul Google Maps la parcele din fișa clientului sau din tab-ul Parcele.</p>
+    </Card>}
+    {allParcels.map((p,i)=>(
+      <Card key={i} style={{borderLeft:`4px solid ${p.clientColor}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:800,fontSize:14,color:C.soil,marginBottom:3}}>{p.name}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+              <Badge color={p.clientColor}>👤 {p.clientName}</Badge>
+              {p.area&&<Badge color={C.muted}>{p.area} ha</Badge>}
+              {p.crop&&<Badge color={C.leaf}>🌱 {p.crop}</Badge>}
+              {p.location&&<Badge color={C.muted}>📍 {p.location}</Badge>}
+            </div>
+            <a href={p.mapsUrl} target="_blank" rel="noreferrer" style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#1565A018",border:"1.5px solid #1565A044",borderRadius:20,color:C.blue,fontWeight:700,fontSize:13,textDecoration:"none"}}>
+              🗺️ Deschide în Google Maps
+            </a>
+          </div>
+          {p.airResult&&<div style={{flexShrink:0,marginTop:2}}>
+            {/🟢/.test(p.airResult)&&<Badge color={C.ok}>✈️ Liber</Badge>}
+            {/🟡/.test(p.airResult)&&<Badge color={C.amber}>✈️ Verifică</Badge>}
+            {/🔴/.test(p.airResult)&&<Badge color={C.danger}>✈️ Autorizație</Badge>}
+          </div>}
+        </div>
+      </Card>
+    ))}
+    {allParcels.length>0&&<div style={{background:C.bluePale,borderRadius:10,padding:"11px 14px",fontSize:12,color:C.blue}}>
+      💡 Tap pe "Deschide în Google Maps" pentru a vedea locația exactă a parcelei pe hartă.
+    </div>}
+  </>;
+}
+
+
+// ── RECOMANDARE PROACTIVĂ AI ──────────────────────────────────────────────
+function RecomandariTab({clients,treatments}){
+  const [selClient,setSelClient]=useState("");
+  const [selParcel,setSelParcel]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [result,setResult]=useState("");
+  const client=clients.find(c=>c.id===selClient);
+  const parcel=client?.parcels.find(p=>p.id===selParcel);
+  const parcelTreatments=treatments.filter(t=>t.clientId===selClient&&t.parcelId===selParcel)
+    .sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+
+  async function getRecommendation(){
+    if(!selClient){alert("Selectează clientul.");return;}
+    setLoading(true);setResult("");
+    try{
+      const history=parcelTreatments.map(t=>`- ${t.date}: ${t.cropLabel} (${t.fenofaza||"—"}), produse: ${t.products.map(p=>p.name).join(", ")}`).join("\n")||"Niciun tratament anterior";
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,
+          system:"Ești inginer agronom expert care analizează istoricul tratamentelor și face recomandări proactive. Răspunzi în română, concis și practic.",
+          messages:[{role:"user",content:`Analizează istoricul de tratamente pentru:
+Client: ${client?.name||"—"}
+Parcelă: ${parcel?.name||"—"} (${parcel?.area||"?"} ha)
+Cultură actuală: ${parcel?.crop||"nespecificată"}
+Locație: ${parcel?.location||"—"}
+
+ISTORICUL ULTIMELOR 5 TRATAMENTE:
+${history}
+
+Bazat pe acest istoric, oferă recomandări proactive:
+
+1. 🔍 ANALIZA ISTORICULUI — ce observi despre pattern-urile de tratament, produse folosite frecvent, lacune
+2. ⚠️ RISCURI IDENTIFICATE — rezistențe posibile la produse, boli/dăunători recurenți, momente critice lipsă
+3. 📅 TRATAMENTE RECOMANDATE URMĂTOR — ce tratamente ar trebui să urmeze în perioada următoare și de ce
+4. 🔄 ROTAȚIE PRODUSE — sugestii de alternanță substanțe active pentru prevenirea rezistențelor
+5. 💡 RECOMANDARE FINALĂ — 3 acțiuni concrete prioritare pentru această parcelă`}]})});
+      const data=await resp.json();
+      if(data.error)throw new Error(data.error.message);
+      setResult(data.content.map(b=>b.text||"").join(""));
+    }catch(e){setResult("❌ Eroare: "+e.message);}
+    setLoading(false);
+  }
+
+  const inp=iSt();
+  return <>
+    <div style={{marginBottom:14}}>
+      <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.soil}}>🤖 Recomandări AI</h2>
+      <p style={{margin:"2px 0 0",fontSize:12,color:C.muted}}>Analiză istoric și recomandări proactive per parcelă</p>
+    </div>
+    <Card>
+      <SecH icon="👥" title="Selectează parcela"/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+        <FL label="Client">
+          <select style={inp} value={selClient} onChange={e=>{setSelClient(e.target.value);setSelParcel("");setResult("");}}>
+            <option value="">— Selectează —</option>
+            {clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </FL>
+        <FL label="Parcelă">
+          <select style={inp} value={selParcel} onChange={e=>{setSelParcel(e.target.value);setResult("");}} disabled={!selClient}>
+            <option value="">— Selectează —</option>
+            {client?.parcels.map(p=><option key={p.id} value={p.id}>{p.name} ({p.area}ha)</option>)}
+          </select>
+        </FL>
+      </div>
+      {parcelTreatments.length>0&&<div style={{background:C.panel,borderRadius:8,padding:"9px 12px",fontSize:12,color:C.muted}}>
+        📋 {parcelTreatments.length} tratamente în istoric pentru această parcelă
+      </div>}
+      {selClient&&parcelTreatments.length===0&&selParcel&&<div style={{background:C.warn+"15",borderRadius:8,padding:"9px 12px",fontSize:12,color:C.warn,fontWeight:600}}>
+        ⚠️ Niciun tratament anterior — recomandările vor fi generale pentru cultură
+      </div>}
+    </Card>
+    <button onClick={getRecommendation} disabled={loading||!selClient} style={{width:"100%",padding:"14px",border:"none",borderRadius:11,cursor:loading||!selClient?"not-allowed":"pointer",background:loading||!selClient?C.muted:`linear-gradient(135deg,${C.soil},${C.leafLight})`,color:"#fff",fontSize:15,fontWeight:900,marginBottom:14}}>
+      {loading?"⏳ Analizez istoricul...":"🤖 Generează recomandări proactive"}
+    </button>
+    {result&&<Card style={{borderColor:C.leafLight,borderWidth:2}}>
+      <div style={{background:`linear-gradient(135deg,${C.soil}12,${C.leaf}12)`,borderRadius:9,padding:"10px 13px",marginBottom:12}}>
+        <div style={{fontWeight:900,fontSize:14,color:C.soil}}>🤖 Recomandări AI — {client?.name} · {parcel?.name||"Toate parcelele"}</div>
+        <div style={{fontSize:11,color:C.muted,marginTop:1}}>Bazat pe {parcelTreatments.length} tratamente anterioare</div>
+      </div>
+      <AiResult text={result}/>
+    </Card>}
+  </>;
+}
+
+
+// ── MULTILINGV (RO/EN/ES) ─────────────────────────────────────────────────
+const TRANSLATIONS={
+  ro:{dash:"Statistici",clients:"Clienți",parceleLibere:"Parcele",journal:"Jurnal",calendar:"Calendar",pih:"PIH",tarifare:"Tarife",newTreat:"Tratament",produse:"Produse",chat:"Chat",settings:"Setări",harta:"Hartă",recomandari:"AI Tips",clientiTitle:"Clienți",noClient:"Niciun client încă",addClient:"Adaugă primul client",newClientBtn:"+ Client nou"},
+  en:{dash:"Dashboard",clients:"Clients",parceleLibere:"Fields",journal:"Journal",calendar:"Calendar",pih:"PHI",tarifare:"Pricing",newTreat:"Treatment",produse:"Products",chat:"Chat",settings:"Settings",harta:"Map",recomandari:"AI Tips",clientiTitle:"Clients",noClient:"No clients yet",addClient:"Add first client",newClientBtn:"+ New client"},
+  es:{dash:"Estadísticas",clients:"Clientes",parceleLibere:"Parcelas",journal:"Diario",calendar:"Calendario",pih:"PHI",tarifare:"Tarifas",newTreat:"Tratamiento",produse:"Productos",chat:"Chat",settings:"Ajustes",harta:"Mapa",recomandari:"AI Tips",clientiTitle:"Clientes",noClient:"Sin clientes aún",addClient:"Añadir primer cliente",newClientBtn:"+ Nuevo cliente"},
+};
+// Lang context exported for use in components if needed
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+document.getElementById('splash').style.transition = 'opacity 0.5s';
+document.getElementById('splash').style.opacity = '0';
+setTimeout(function(){ var s=document.getElementById('splash'); if(s) s.remove(); }, 600);
+  </script>
+</body>
+</html>
